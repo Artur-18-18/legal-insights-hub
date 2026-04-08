@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Calendar, FileText, ExternalLink, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { useI18n } from "@/lib/i18n";
 
 const PostPage = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { t } = useI18n();
 
   const { data: post, isLoading } = useQuery({
     queryKey: ["post", slug],
@@ -18,20 +20,13 @@ const PostPage = () => {
     enabled: !!slug,
   });
 
-  const handlePDF = () => {
-    window.print();
-  };
-
   if (isLoading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-10 max-w-3xl">
+        <div className="container mx-auto px-4 py-8 md:py-10 max-w-3xl">
           <Skeleton className="h-8 w-3/4 mb-4" />
           <Skeleton className="h-5 w-1/2 mb-8" />
           <Skeleton className="h-64 w-full mb-4" />
-          <Skeleton className="h-4 w-full mb-2" />
-          <Skeleton className="h-4 w-full mb-2" />
-          <Skeleton className="h-4 w-3/4" />
         </div>
       </Layout>
     );
@@ -41,8 +36,8 @@ const PostPage = () => {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-16 text-center">
-          <p className="text-muted-foreground text-lg">Статья не найдена</p>
-          <Link to="/" className="text-gold mt-4 inline-block">← На главную</Link>
+          <p className="text-muted-foreground text-lg">{t("posts.notfound")}</p>
+          <Link to="/" className="text-gold mt-4 inline-block">{t("posts.tohome")}</Link>
         </div>
       </Layout>
     );
@@ -52,13 +47,13 @@ const PostPage = () => {
 
   return (
     <Layout>
-      <article className="container mx-auto px-4 py-10 max-w-3xl print:max-w-none">
-        <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 print:hidden">
-          <ArrowLeft className="h-4 w-4" /> Назад
+      <article className="container mx-auto px-4 py-6 md:py-10 max-w-3xl print:max-w-none">
+        <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 md:mb-6 print:hidden">
+          <ArrowLeft className="h-4 w-4" /> {t("posts.back")}
         </Link>
 
-        <header className="mb-8">
-          <div className="flex items-center gap-2 mb-3">
+        <header className="mb-6 md:mb-8">
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
             {post.categories && (
               <Link to={`/category/${post.categories.slug}`}>
                 <Badge variant="secondary">{post.categories.name}</Badge>
@@ -70,15 +65,15 @@ const PostPage = () => {
             </span>
           </div>
 
-          <h1 className="font-serif text-3xl md:text-4xl font-bold mb-4">{post.title}</h1>
+          <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold mb-3 md:mb-4">{post.title}</h1>
 
           {post.excerpt && (
-            <p className="text-lg text-muted-foreground">{post.excerpt}</p>
+            <p className="text-base md:text-lg text-muted-foreground">{post.excerpt}</p>
           )}
 
           <div className="flex items-center gap-2 mt-4 print:hidden">
-            <Button variant="outline" size="sm" onClick={handlePDF}>
-              <FileText className="h-4 w-4 mr-1" /> PDF
+            <Button variant="outline" size="sm" onClick={() => window.print()}>
+              <FileText className="h-4 w-4 mr-1" /> {t("posts.pdf")}
             </Button>
           </div>
         </header>
@@ -87,21 +82,20 @@ const PostPage = () => {
           <img
             src={post.featured_image}
             alt={post.title}
-            className="w-full rounded-lg mb-8 shadow-sm"
+            className="w-full rounded-lg mb-6 md:mb-8 shadow-sm"
           />
         )}
 
         <div
-          className="prose prose-slate max-w-none mb-8
+          className="prose prose-slate max-w-none mb-6 md:mb-8 prose-sm md:prose-base
             prose-headings:font-serif prose-headings:text-foreground
             prose-p:text-foreground/90 prose-a:text-gold prose-a:no-underline hover:prose-a:underline
             prose-strong:text-foreground prose-img:rounded-lg"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 
-        {/* Post images */}
         {post.post_images && post.post_images.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mb-6 md:mb-8">
             {post.post_images
               .sort((a, b) => a.sort_order - b.sort_order)
               .map((img) => (
@@ -116,11 +110,10 @@ const PostPage = () => {
           </div>
         )}
 
-        {/* Legislation links */}
         {legislationLinks.length > 0 && (
-          <div className="bg-muted rounded-lg p-5 mb-8">
-            <h3 className="font-serif text-lg font-semibold mb-3 flex items-center gap-2">
-              <FileText className="h-5 w-5 text-gold" /> Ссылки на законодательство
+          <div className="bg-muted rounded-lg p-4 md:p-5 mb-6 md:mb-8">
+            <h3 className="font-serif text-base md:text-lg font-semibold mb-3 flex items-center gap-2">
+              <FileText className="h-5 w-5 text-gold" /> {t("posts.legislation")}
             </h3>
             <ul className="space-y-2">
               {legislationLinks.map((link, i) => (
@@ -139,7 +132,6 @@ const PostPage = () => {
           </div>
         )}
 
-        {/* Tags */}
         {post.post_tags && post.post_tags.length > 0 && (
           <div className="flex flex-wrap gap-2 print:hidden">
             {post.post_tags.map((pt) =>
