@@ -81,7 +81,7 @@ const AdminPostEditor = () => {
       setAuthorName(existingPost.author_name);
       setPublished(existingPost.published);
       setFeaturedImage(existingPost.featured_image || "");
-      setLegislationLinks((existingPost.legislation_links as LegislationLink[]) || []);
+      setLegislationLinks((existingPost.legislation_links as unknown as LegislationLink[]) || []);
       setSelectedTags(existingPost.post_tags?.map((pt: any) => pt.tag_id) || []);
     }
   }, [existingPost]);
@@ -120,7 +120,7 @@ const AdminPostEditor = () => {
         author_name: authorName,
         published,
         featured_image: featuredImage || null,
-        legislation_links: legislationLinks,
+        legislation_links: legislationLinks as unknown as any,
       };
 
       let postId: string;
