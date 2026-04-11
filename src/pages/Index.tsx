@@ -1,25 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { PostCard } from "@/components/PostCard";
 import { CategoryCard } from "@/components/CategoryCard";
-import { getCategories, getPosts } from "@/lib/supabase-helpers";
-import { Skeleton } from "@/components/ui/skeleton";
+import { categories, posts } from "@/lib/mock-data";
 import { Scale, BookOpen, Search as SearchIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 
 const Index = () => {
   const { t } = useI18n();
-
-  const { data: categories, isLoading: catLoading } = useQuery({
-    queryKey: ["categories"],
-    queryFn: getCategories,
-  });
-
-  const { data: posts, isLoading: postsLoading } = useQuery({
-    queryKey: ["posts", "latest"],
-    queryFn: () => getPosts({ limit: 6 }),
-  });
 
   return (
     <Layout>
@@ -53,25 +41,17 @@ const Index = () => {
 
       <section className="container mx-auto px-4 -mt-6 md:-mt-8 relative z-10 mb-10 md:mb-12">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 md:gap-3">
-          {catLoading
-            ? Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-28 md:h-32 rounded-lg" />
-              ))
-            : categories?.map((cat) => <CategoryCard key={cat.id} category={cat} />)}
+          {categories.map((cat) => (
+            <CategoryCard key={cat.id} category={cat} />
+          ))}
         </div>
       </section>
 
       <section className="container mx-auto px-4 pb-12 md:pb-16">
         <h2 className="font-serif text-xl md:text-2xl font-bold mb-4 md:mb-6">{t("posts.latest")}</h2>
-        {postsLoading ? (
+        {posts.length > 0 ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-64 rounded-lg" />
-            ))}
-          </div>
-        ) : posts && posts.length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {posts.map((post: any) => (
+            {posts.filter((p) => p.published).map((post) => (
               <PostCard key={post.id} post={post} />
             ))}
           </div>

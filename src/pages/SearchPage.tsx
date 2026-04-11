@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { PostCard } from "@/components/PostCard";
-import { searchPosts, getTags } from "@/lib/supabase-helpers";
+import { searchPostsMock, tags } from "@/lib/mock-data";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Tag } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
@@ -17,16 +15,7 @@ const SearchPage = () => {
   const [query, setQuery] = useState(initialQuery);
   const { t } = useI18n();
 
-  const { data: results, isLoading } = useQuery({
-    queryKey: ["search", initialQuery],
-    queryFn: () => searchPosts(initialQuery),
-    enabled: !!initialQuery,
-  });
-
-  const { data: tags } = useQuery({
-    queryKey: ["tags"],
-    queryFn: getTags,
-  });
+  const results = initialQuery ? searchPostsMock(initialQuery) : [];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +34,7 @@ const SearchPage = () => {
           </Button>
         </form>
 
-        {tags && tags.length > 0 && (
+        {tags.length > 0 && (
           <div className="mb-6 md:mb-8">
             <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1">
               <Tag className="h-3.5 w-3.5" /> {t("search.tags")}
@@ -65,13 +54,9 @@ const SearchPage = () => {
             <h2 className="text-base md:text-lg font-medium mb-4">
               {t("search.results")} «{initialQuery}»
             </h2>
-            {isLoading ? (
+            {results.length > 0 ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-64 rounded-lg" />)}
-              </div>
-            ) : results && results.length > 0 ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {results.map((post: any) => <PostCard key={post.id} post={post} />)}
+                {results.map((post) => <PostCard key={post.id} post={post} />)}
               </div>
             ) : (
               <p className="text-muted-foreground">{t("search.nothing")}</p>
