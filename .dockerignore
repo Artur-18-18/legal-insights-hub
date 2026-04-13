@@ -8,3 +8,5 @@ dist
 .env.production
 server/uploads/*
 !server/uploads/.gitkeep
+.nixpacks
+.railway
