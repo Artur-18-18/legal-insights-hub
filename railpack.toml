@@ -1,0 +1,5 @@
+[build]
+cmd = "npm ci && vite build"
+
+[build.cache]
+disabled = true
