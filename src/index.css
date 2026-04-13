@@ -85,10 +85,14 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground font-sans;
   }
-  h1, h2, h3 {
+
+  h1,
+  h2,
+  h3 {
     font-family: 'Playfair Display', serif;
   }
 }
@@ -97,19 +101,107 @@
   .hero-gradient {
     background: var(--hero-gradient);
   }
+
   .text-gold {
     color: hsl(var(--gold));
   }
+
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
   .line-clamp-3 {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+}
+
+/* Quill Editor Styles for Admin Panel */
+.ql-container {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.ql-editor {
+  min-height: 300px;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.ql-editor p {
+  margin-bottom: 1em;
+}
+
+.ql-editor h1,
+.ql-editor h2,
+.ql-editor h3 {
+  font-family: 'Playfair Display', serif;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.ql-editor ul,
+.ql-editor ol {
+  padding-left: 1.5em;
+}
+
+.ql-editor a {
+  color: hsl(var(--gold));
+  text-decoration: underline;
+}
+
+.ql-editor blockquote {
+  border-left: 4px solid hsl(var(--gold));
+  padding-left: 1em;
+  margin-left: 0;
+  font-style: italic;
+  color: hsl(var(--muted-foreground));
+}
+
+.ql-editor code-block {
+  background: hsl(var(--muted));
+  padding: 0.5em;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+/* Fix Quill toolbar overlap with shadcn/ui */
+.ql-toolbar.ql-snow {
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+}
+
+.ql-container.ql-snow {
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  border-top: none;
+}
+
+.ql-snow .ql-picker-label {
+  color: hsl(var(--foreground));
+}
+
+.ql-snow .ql-stroke {
+  stroke: hsl(var(--foreground));
+}
+
+.ql-snow .ql-fill {
+  fill: hsl(var(--foreground));
+}
+
+.ql-snow.ql-toolbar button:hover .ql-stroke,
+.ql-snow.ql-toolbar button.ql-active .ql-stroke {
+  stroke: hsl(var(--gold));
+}
+
+.ql-snow.ql-toolbar button:hover .ql-fill,
+.ql-snow.ql-toolbar button.ql-active .ql-fill {
+  fill: hsl(var(--gold));
 }

@@ -12,10 +12,20 @@ dist
 dist-ssr
 *.local
 
+# Uploads (user files — don't commit)
+server/uploads/*
+!server/uploads/.gitkeep
+
+# Environment
+.env
+.env.local
+.env.production
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
+.DS_Store
 .DS_Store
 *.suo
 *.ntvs*

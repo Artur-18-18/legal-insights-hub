@@ -1,21 +1,124 @@
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, FileText, ExternalLink, ArrowLeft } from "lucide-react";
+import { Calendar, FileText, ExternalLink, ArrowLeft, Download } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { useI18n } from "@/lib/i18n";
+import { uz } from "date-fns/locale";
+import { useI18n, useLocalized } from "@/lib/i18n";
+import { api } from "@/lib/api";
 import { getPostBySlug } from "@/lib/mock-data";
+import html2pdf from "html2pdf.js";
+
+interface PostTag {
+  tags: { name: string; name_uz?: string; slug: string } | null;
+}
+
+interface Post {
+  _id?: string;
+  id?: string;
+  title: string;
+  title_uz?: string;
+  slug: string;
+  excerpt: string | null;
+  excerpt_uz?: string;
+  content: string;
+  content_uz?: string;
+  featured_image: string | null;
+  created_at: string;
+  author_name: string;
+  published: boolean;
+  legislation_links: Array<{ title: string; url: string }>;
+  categories: { name: string; name_uz?: string; slug: string; icon: string | null } | null;
+  post_tags: PostTag[];
+  post_images: Array<{ url: string; alt_text: string | null }>;
+  post_videos?: Array<{ url: string; alt_text: string | null }>;
+}
 
 const PostPage = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { t } = useI18n();
-  const post = slug ? getPostBySlug(slug) : null;
+  const { t, lang } = useI18n();
+  const localized = useLocalized();
+  const [post, setPost] = useState<Post | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+  const articleRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!slug) return;
+    api.getPost(slug)
+      .then((data) => {
+        setPost({
+          ...data,
+          categories: data.category ? { name: data.category.name, slug: data.category.slug, icon: data.category.icon } : null,
+          post_tags: data.tags ? data.tags.map((tag: { name: string; slug: string }) => ({ tags: { name: tag.name, slug: tag.slug } })) : [],
+        });
+      })
+      .catch(() => {
+        const mockPost = getPostBySlug(slug);
+        if (mockPost) setPost(mockPost as unknown as Post);
+      })
+      .finally(() => setLoading(false));
+  }, [slug]);
+
+  const downloadPdf = useCallback(async () => {
+    if (!articleRef.current || !post) return;
+    setDownloading(true);
+
+    const element = articleRef.current;
+
+    // Скрываем кнопки перед генерацией PDF
+    const printControls = element.querySelectorAll(".print-hidden");
+    printControls.forEach((el) => {
+      (el as HTMLElement).style.display = "none";
+    });
+
+    const opt = {
+      margin: [10, 10, 10, 10],
+      filename: `${post.slug}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    };
+
+    try {
+      await html2pdf().set(opt).from(element).save();
+    } catch (err) {
+      console.error("PDF generation error:", err);
+    } finally {
+      // Восстанавливаем видимость кнопок
+      printControls.forEach((el) => {
+        (el as HTMLElement).style.display = "";
+      });
+      setDownloading(false);
+    }
+  }, [post]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16">
+          <div className="animate-pulse space-y-4 max-w-3xl">
+            <div className="h-6 bg-muted rounded w-32" />
+            <div className="h-10 bg-muted rounded w-3/4" />
+            <div className="h-4 bg-muted rounded w-1/2" />
+            <div className="h-40 bg-muted rounded" />
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!post) {
     return (
       <Layout>
+        <Helmet>
+          <title>Статья не найдена — ЮристБлог</title>
+          <meta name="description" content="Запрашиваемая статья не найдена" />
+        </Helmet>
         <div className="container mx-auto px-4 py-16 text-center">
           <p className="text-muted-foreground text-lg">{t("posts.notfound")}</p>
           <Link to="/" className="text-gold mt-4 inline-block">{t("posts.tohome")}</Link>
@@ -24,9 +127,34 @@ const PostPage = () => {
     );
   }
 
+  const title = localized(post, "title") || post.title;
+  const excerpt = localized(post, "excerpt") || post.excerpt;
+  const content = localized(post, "content") || post.content;
+  const dateLocale = lang === "uz" ? uz : ru;
+  const siteUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const postUrl = `${siteUrl}/post/${post.slug}`;
+  const imageUrl = post.featured_image || `${siteUrl}/og-image.jpg`;
+  const seoDescription = excerpt || content.replace(/<[^>]*>/g, "").substring(0, 160);
+
+  const hasMedia = post.post_images.length > 0 || (post.post_videos && post.post_videos.length > 0);
+
   return (
     <Layout>
-      <article className="container mx-auto px-4 py-6 md:py-10 max-w-3xl print:max-w-none">
+      <Helmet>
+        <title>{title} — ЮристБлог</title>
+        <meta name="description" content={seoDescription} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={seoDescription} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={postUrl} />
+        <meta property="og:image" content={imageUrl} />
+        <meta property="article:published_time" content={post.created_at} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={seoDescription} />
+        <link rel="canonical" href={postUrl} />
+      </Helmet>
+      <article ref={articleRef} className="container mx-auto px-4 py-6 md:py-10 max-w-5xl print:max-w-none">
         <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 md:mb-6 print:hidden">
           <ArrowLeft className="h-4 w-4" /> {t("posts.back")}
         </Link>
@@ -35,31 +163,87 @@ const PostPage = () => {
           <div className="flex items-center gap-2 mb-3 flex-wrap">
             {post.categories && (
               <Link to={`/category/${post.categories.slug}`}>
-                <Badge variant="secondary">{post.categories.name}</Badge>
+                <Badge variant="secondary">{post.categories.name_uz && lang === "uz" ? post.categories.name_uz : post.categories.name}</Badge>
               </Link>
             )}
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
               <Calendar className="h-3.5 w-3.5" />
-              {format(new Date(post.created_at), "d MMMM yyyy", { locale: ru })}
+              {format(new Date(post.created_at), "d MMMM yyyy", { locale: dateLocale })}
             </span>
           </div>
-          <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold mb-3 md:mb-4">{post.title}</h1>
-          {post.excerpt && <p className="text-base md:text-lg text-muted-foreground">{post.excerpt}</p>}
-          <div className="flex items-center gap-2 mt-4 print:hidden">
+          <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold mb-3 md:mb-4">{title}</h1>
+          {excerpt && <p className="text-base md:text-lg text-muted-foreground">{excerpt}</p>}
+          <div className="flex items-center gap-2 mt-4 print-hidden">
             <Button variant="outline" size="sm" onClick={() => window.print()}>
               <FileText className="h-4 w-4 mr-1" /> {t("posts.pdf")}
+            </Button>
+            <Button variant="outline" size="sm" onClick={downloadPdf} disabled={downloading}>
+              {downloading ? (
+                <span className="animate-spin h-4 w-4 mr-1">⏳</span>
+              ) : (
+                <Download className="h-4 w-4 mr-1" />
+              )}
+              Скачать PDF
             </Button>
           </div>
         </header>
 
         {post.featured_image && (
-          <img src={post.featured_image} alt={post.title} className="w-full rounded-lg mb-6 md:mb-8 shadow-sm" />
+          <img src={post.featured_image} alt={title} className="w-full rounded-lg mb-6 md:mb-8 shadow-sm" />
         )}
 
-        <div
-          className="prose prose-slate max-w-none mb-6 md:mb-8 prose-sm md:prose-base prose-headings:font-serif prose-headings:text-foreground prose-p:text-foreground/90 prose-a:text-gold prose-a:no-underline hover:prose-a:underline prose-strong:text-foreground prose-img:rounded-lg"
-          dangerouslySetInnerHTML={{ __html: post.content }}
-        />
+        {/* Layout: content + media side by side when media exists */}
+        <div className={hasMedia ? "flex flex-col lg:flex-row gap-6 md:gap-8" : ""}>
+          <div className={hasMedia ? "flex-1 min-w-0" : ""}>
+            <div
+              className="prose prose-slate max-w-none mb-6 md:mb-8 prose-sm md:prose-base prose-headings:font-serif prose-headings:text-foreground prose-p:text-foreground/90 prose-a:text-gold prose-a:no-underline hover:prose-a:underline prose-strong:text-foreground prose-img:rounded-lg"
+              dangerouslySetInnerHTML={{ __html: content }}
+            />
+          </div>
+
+          {/* Media sidebar — only shown when media exists */}
+          {hasMedia && (
+            <div className="lg:w-80 xl:w-96 flex-shrink-0 space-y-4">
+              {post.post_images.length > 0 && (
+                <div>
+                  <h3 className="font-serif text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+                    {t("admin.images")}
+                  </h3>
+                  <div className="space-y-3">
+                    {post.post_images.map((img, i) => (
+                      <img
+                        key={i}
+                        src={img.url}
+                        alt={img.alt_text || post.title}
+                        className="w-full rounded-lg shadow-sm hover:shadow-md transition-shadow object-cover"
+                        loading="lazy"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {post.post_videos && post.post_videos.length > 0 && (
+                <div>
+                  <h3 className="font-serif text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+                    Видео
+                  </h3>
+                  <div className="space-y-3">
+                    {post.post_videos.map((vid, i) => (
+                      <video
+                        key={i}
+                        src={vid.url}
+                        controls
+                        className="w-full rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                        preload="metadata"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {post.legislation_links.length > 0 && (
           <div className="bg-muted rounded-lg p-4 md:p-5 mb-6 md:mb-8">
@@ -83,7 +267,7 @@ const PostPage = () => {
             {post.post_tags.map((pt) =>
               pt.tags ? (
                 <Link key={pt.tags.slug} to={`/tag/${pt.tags.slug}`}>
-                  <Badge variant="outline">#{pt.tags.name}</Badge>
+                  <Badge variant="outline">#{pt.tags.name_uz && lang === "uz" ? pt.tags.name_uz : pt.tags.name}</Badge>
                 </Link>
               ) : null
             )}

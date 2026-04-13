@@ -18,7 +18,10 @@ export function Footer() {
             <Link to="/category/taxes" className="hover:text-foreground transition-colors">{t("cat.taxes")}</Link>
             <Link to="/category/construction" className="hover:text-foreground transition-colors">{t("cat.construction")}</Link>
           </div>
-          <p className="text-sm text-muted-foreground">{t("footer.rights")}</p>
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-sm text-muted-foreground">{t("footer.rights")}</p>
+            <Link to="/admin/login" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Ismoiljon Umaraliyev</Link>
+          </div>
         </div>
       </div>
     </footer>
