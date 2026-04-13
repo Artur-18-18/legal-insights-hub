@@ -1,0 +1,5 @@
+[phases.build]
+cmds = ["npm ci && npx vite build"]
+
+[phases.build.cache]
+disabled = true
