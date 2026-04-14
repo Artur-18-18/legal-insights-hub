@@ -3,10 +3,16 @@ dist
 .git
 .vscode
 .idea
-*.md
 .env.local
 .env.production
 server/uploads/*
 !server/uploads/.gitkeep
 .nixpacks
 .railway
+render.yaml
+RENDER_DEPLOY.md
+railway.json
+playwright-report
+e2e
+playwright.config.ts
+.github

@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: yuristblog
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm ci && npx vite build
+    startCommand: NODE_ENV=production node server/index.js
+    healthCheckPath: /api/stats
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+        sync: false
+    autoDeploy: true
