@@ -245,7 +245,7 @@ const seedData = async () => {
 
 // SPA catch-all route — serve index.html for all non-API routes (production only)
 if (isProduction) {
-  app.get("*", (req, res) => {
+  app.get("{*path}", (req, res) => {
     res.sendFile(path.join(__dirname, "..", "dist", "index.html"));
   });
 }
