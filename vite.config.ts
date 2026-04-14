@@ -23,6 +23,10 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
+  preview: {
+    host: "::",
+    port: 5173,
+  },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {

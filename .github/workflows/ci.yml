@@ -99,6 +99,21 @@ jobs:
       - name: Build Vite
         run: npm run build
 
+      - name: Start preview server
+        run: npx vite preview --port 5173 &
+
+      - name: Wait for server
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5173 >/dev/null 2>&1; then
+              echo "Server is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server failed to start"
+          exit 1
+
       - name: Run Playwright tests
         run: npx playwright test
 
