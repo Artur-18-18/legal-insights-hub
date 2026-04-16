@@ -1,13 +1,6 @@
-import mongoose from "mongoose";
+import { initDatabase } from "./database.js";
 
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/yuristblog");
-    console.log(`MongoDB connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.error("MongoDB connection error:", error.message);
-    process.exit(1);
-  }
-};
-
-export default connectDB;
+/** Подключение к SQLite (синхронно через better-sqlite3). */
+export default async function connectDB() {
+  initDatabase();
+}

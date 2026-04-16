@@ -28,17 +28,11 @@
 | Переменная | Значение |
 |---|---|
 | `NODE_ENV` | `production` |
-| `MONGO_URI` | Строка подключения MongoDB Atlas (например, `mongodb+srv://user:pass@cluster.mongodb.net/yuristblog`) |
-| `JWT_SECRET` | Случательная строка минимум 32 символа |
+| `JWT_SECRET` | Случайная строка минимум 32 символа |
 
-### Где взять MongoDB
+### База данных (SQLite)
 
-Render не предоставляет MongoDB. Создайте бесплатную базу на [MongoDB Atlas](https://www.mongodb.com/cloud/atlas):
-
-1. Создайте кластер (Free tier `M0`)
-2. Создайте пользователя БД
-3. Получите connection string: `mongodb+srv://user:pass@cluster.mongodb.net/yuristblog?retryWrites=true&w=majority`
-4. Вставьте его в `MONGO_URI` на Render
+По умолчанию создаётся файл `server/data/yuristblog.sqlite`. На Render без постоянного диска данные не переживают деплой. При необходимости задайте `SQLITE_PATH` на смонтированный том или используйте платный **Persistent Disk**.
 
 ## После деплоя
 

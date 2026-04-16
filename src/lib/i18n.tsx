@@ -5,11 +5,68 @@ type Lang = "ru" | "uz";
 interface I18nContextType {
   lang: Lang;
   setLang: (l: Lang) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 const translations: Record<Lang, Record<string, string>> = {
   ru: {
+    "lang.ru": "Русский",
+    "lang.uz": "O'zbekcha",
+    "lang.switch": "Сменить язык",
+    "translate.title": "Автоматический перевод",
+    "translate.ru_to_uz": "Перевести на узбекский",
+    "translate.uz_to_ru": "Перевести на русский",
+    "translate.button": "Перевести",
+    "translate.translating": "Переводим...",
+    "translate.success": "Перевод готов",
+    "translate.success_desc": "Текст переведён автоматически. Проверьте результат.",
+    "translate.error": "Не удалось перевести",
+    "translate.error_desc": "Сервис перевода временно недоступен. Попробуйте позже.",
+    "translate.auto_on_save": "Автоматически перевести при публикации",
+    "translate.auto_hint": "Если узбекская версия пустая — она будет создана автоматически",
+    "translate.all_fields": "Перевести всё",
+    "translate.current_field": "Перевести это поле",
+    "admin.lang_ru": "Русская версия",
+    "admin.lang_uz": "Узбекская версия",
+    "admin.post_image_placeholder": "Изображения",
+    "admin.videos": "Видео",
+    "admin.upload_url": "Добавить URL",
+    "admin.images_empty": "Изображений пока нет",
+    "admin.images_empty_hint": "Загрузите файл или добавьте ссылку",
+    "admin.image_added": "Изображение добавлено",
+    "admin.image_uploaded": "Изображение загружено",
+    "admin.image_deleted": "Изображение удалено",
+    "admin.copied": "Скопировано",
+    "admin.url_copied": "URL скопирован в буфер обмена",
+    "admin.add_image_url": "Добавить изображение по URL",
+    "admin.image_url_label": "URL изображения",
+    "admin.image_no_desc": "Без описания",
+    "admin.cat_created": "Категория создана",
+    "admin.cat_updated": "Категория обновлена",
+    "admin.cat_deleted": "Категория удалена",
+    "admin.cat_delete_err": "Не удалось удалить категорию",
+    "admin.cat_load_err": "Не удалось загрузить категории",
+    "admin.tag_created": "Тег создан",
+    "admin.tag_updated": "Тег обновлён",
+    "admin.tag_deleted": "Тег удалён",
+    "admin.tag_delete_err": "Не удалось удалить тег",
+    "admin.tag_load_err": "Не удалось загрузить теги",
+    "admin.post_deleted": "Статья удалена",
+    "admin.post_delete_err": "Не удалось удалить статью",
+    "admin.post_load_err": "Не удалось загрузить статьи",
+    "admin.select_file": "Выберите файл изображения",
+    "admin.content_placeholder": "Напишите содержание статьи...",
+    "admin.content_placeholder_uz": "Maqola mazmunini yozing...",
+    "admin.slug_placeholder": "osnovy-korporativnogo-prava",
+    "admin.menu": "Меню",
+    "posts.author": "Автор",
+    "posts.published_on": "Опубликовано",
+    "posts.download_pdf": "Скачать PDF",
+    "posts.print": "Печать",
+    "posts.videos": "Видео",
+    "posts.media": "Медиа",
+    "site.tagline": "Юридический блог — профессиональные разборы законодательства",
+    "actions.close": "Закрыть",
     "site.name": "ЮристБлог",
     "site.title": "Юридический блог",
     "site.subtitle": "Аналитика и разборы законодательства в области корпоративного права, налогов и строительства",
@@ -108,6 +165,7 @@ const translations: Record<Lang, Record<string, string>> = {
     "admin.delete": "Удалить",
     "admin.published_badge": "Опубликовано",
     "admin.draft_badge": "Черновик",
+    "admin.categories": "Категории",
     "admin.categories_title": "Категории",
     "admin.new_category_btn": "Новая категория",
     "admin.no_categories": "Категорий пока нет",
@@ -135,14 +193,75 @@ const translations: Record<Lang, Record<string, string>> = {
     "admin.enter_login": "Введите свои данные для входа",
     "admin.signin_loading": "Вход...",
     "admin.back_to_site": "← Вернуться на сайт",
+    "admin.success": "Готово",
     "admin.success_login": "Успешный вход",
     "admin.welcome": "Добро пожаловать в админ-панель!",
+    "admin.error_required": "Поле {field} обязательно для заполнения",
+    "admin.confirm_action": "Вы уверены?",
+    "admin.saving": "Сохранение...",
     "admin.error": "Ошибка",
     "admin.login_error": "Ошибка входа",
     "admin.no_posts_yet": "В этой категории пока нет статей",
     "footer.rights": "© {year} ЮристБлог",
   },
   uz: {
+    "lang.ru": "Rus tili",
+    "lang.uz": "O'zbekcha",
+    "lang.switch": "Tilni almashtirish",
+    "translate.title": "Avtomatik tarjima",
+    "translate.ru_to_uz": "O'zbek tiliga tarjima",
+    "translate.uz_to_ru": "Rus tiliga tarjima",
+    "translate.button": "Tarjima",
+    "translate.translating": "Tarjima qilinmoqda...",
+    "translate.success": "Tarjima tayyor",
+    "translate.success_desc": "Matn avtomatik tarjima qilindi. Natijani tekshiring.",
+    "translate.error": "Tarjima qilib bo'lmadi",
+    "translate.error_desc": "Tarjima xizmati vaqtincha mavjud emas. Keyinroq urinib ko'ring.",
+    "translate.auto_on_save": "Nashr qilishda avtomatik tarjima qilish",
+    "translate.auto_hint": "Agar o'zbekcha versiya bo'sh bo'lsa — u avtomatik yaratiladi",
+    "translate.all_fields": "Hammasini tarjima qilish",
+    "translate.current_field": "Shu maydonni tarjima qilish",
+    "admin.lang_ru": "Rus tilidagi versiya",
+    "admin.lang_uz": "O'zbek tilidagi versiya",
+    "admin.post_image_placeholder": "Rasmlar",
+    "admin.videos": "Videolar",
+    "admin.upload_url": "URL qo'shish",
+    "admin.images_empty": "Rasmlar hali yo'q",
+    "admin.images_empty_hint": "Fayl yuklang yoki havola qo'shing",
+    "admin.image_added": "Rasm qo'shildi",
+    "admin.image_uploaded": "Rasm yuklandi",
+    "admin.image_deleted": "Rasm o'chirildi",
+    "admin.copied": "Nusxalandi",
+    "admin.url_copied": "URL almashuv buferiga nusxalandi",
+    "admin.add_image_url": "URL orqali rasm qo'shish",
+    "admin.image_url_label": "Rasm URL manzili",
+    "admin.image_no_desc": "Tavsifsiz",
+    "admin.cat_created": "Kategoriya yaratildi",
+    "admin.cat_updated": "Kategoriya yangilandi",
+    "admin.cat_deleted": "Kategoriya o'chirildi",
+    "admin.cat_delete_err": "Kategoriyani o'chirib bo'lmadi",
+    "admin.cat_load_err": "Kategoriyalarni yuklab bo'lmadi",
+    "admin.tag_created": "Teg yaratildi",
+    "admin.tag_updated": "Teg yangilandi",
+    "admin.tag_deleted": "Teg o'chirildi",
+    "admin.tag_delete_err": "Tegni o'chirib bo'lmadi",
+    "admin.tag_load_err": "Teglarni yuklab bo'lmadi",
+    "admin.post_deleted": "Maqola o'chirildi",
+    "admin.post_delete_err": "Maqolani o'chirib bo'lmadi",
+    "admin.post_load_err": "Maqolalarni yuklab bo'lmadi",
+    "admin.select_file": "Rasm faylini tanlang",
+    "admin.content_placeholder": "Maqola mazmunini yozing...",
+    "admin.content_placeholder_uz": "Maqola mazmunini yozing...",
+    "admin.slug_placeholder": "osnovy-korporativnogo-prava",
+    "admin.menu": "Menyu",
+    "posts.author": "Muallif",
+    "posts.published_on": "Nashr qilingan",
+    "posts.download_pdf": "PDF yuklab olish",
+    "posts.print": "Chop etish",
+    "posts.videos": "Videolar",
+    "posts.media": "Media",
+    "site.tagline": "Yuridik blog — qonunchilik bo'yicha professional tahlil",
+    "actions.close": "Yopish",
     "site.name": "Yuridik",
     "site.title": "Yuridik blog",
     "site.subtitle": "Korporativ huquq, soliqlar va qurilish sohasida qonunchilik tahlili",
@@ -241,6 +360,7 @@ const translations: Record<Lang, Record<string, string>> = {
     "admin.delete": "O'chirish",
     "admin.published_badge": "Nashr qilingan",
     "admin.draft_badge": "Qoralama",
+    "admin.categories": "Kategoriyalar",
     "admin.categories_title": "Kategoriyalar",
     "admin.new_category_btn": "Yangi kategoriya",
     "admin.no_categories": "Kategoriyalar hali yo'q",
@@ -268,8 +388,12 @@ const translations: Record<Lang, Record<string, string>> = {
     "admin.enter_login": "Kirish ma'lumotlarini kiriting",
     "admin.signin_loading": "Kirish...",
     "admin.back_to_site": "← Saytga qaytish",
+    "admin.success": "Tayyor",
     "admin.success_login": "Muvaffaqiyatli kirish",
     "admin.welcome": "Admin paneliga xush kelibsiz!",
+    "admin.error_required": "{field} maydoni to'ldirilishi shart",
+    "admin.confirm_action": "Ishonchingiz komilmi?",
+    "admin.saving": "Saqlanmoqda...",
     "admin.error": "Xato",
     "admin.login_error": "Kirish xatosi",
     "admin.no_posts_yet": "Bu kategoriyada hali maqolalar yo'q",
@@ -290,10 +414,17 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("lang", l);
   };
 
-  const t = (key: string) => {
+  const t = (key: string, params?: Record<string, string | number>) => {
     const val = translations[lang][key];
     if (!val) return key;
-    return val.replace("{year}", new Date().getFullYear().toString());
+    
+    let result = val.replace("{year}", new Date().getFullYear().toString());
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        result = result.replace(`{${k}}`, v.toString());
+      });
+    }
+    return result;
   };
 
   useEffect(() => {
@@ -318,10 +449,11 @@ export function useLocalized() {
   const { lang } = useI18n();
   const isUz = lang === "uz";
 
-  return <T extends string>(obj: Record<string, T | undefined | null>, field: string): T | undefined | null => {
+  return (obj: any, field: string): string | null => {
+    if (!obj) return null;
     if (isUz) {
       const uzField = `${field}_uz`;
-      return (obj[uzField] as T | undefined) || obj[field] || null;
+      return obj[uzField] || obj[field] || null;
     }
     return obj[field] || null;
   };

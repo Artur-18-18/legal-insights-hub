@@ -1,48 +1,53 @@
 import express from "express";
-import Tag from "../models/Tag.js";
 import auth from "../middleware/auth.js";
+import {
+  listTags,
+  createTag,
+  updateTag,
+  deleteTag,
+  isUniqueConstraintError,
+} from "../database.js";
 
 const router = express.Router();
 
-// GET /api/tags — public
 router.get("/", async (req, res) => {
   try {
-    const tags = await Tag.find().sort({ name: 1 });
-    res.json(tags);
+    res.json(listTags());
   } catch (error) {
     res.status(500).json({ error: "Ошибка получения тегов" });
   }
 });
 
-// POST /api/tags — admin only
 router.post("/", auth, async (req, res) => {
   try {
-    const { name, slug } = req.body;
-    const tag = await Tag.create({ name, slug });
+    const { name, name_uz, slug } = req.body;
+    const tag = createTag({ name, name_uz, slug });
     res.status(201).json(tag);
   } catch (error) {
-    if (error.code === 11000) return res.status(400).json({ error: "Такой slug уже существует" });
+    if (isUniqueConstraintError(error)) {
+      return res.status(400).json({ error: "Такой slug уже существует" });
+    }
     res.status(500).json({ error: "Ошибка создания тега" });
   }
 });
 
-// PUT /api/tags/:id — admin only
 router.put("/:id", auth, async (req, res) => {
   try {
-    const tag = await Tag.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const tag = updateTag(req.params.id, req.body);
     if (!tag) return res.status(404).json({ error: "Тег не найден" });
     res.json(tag);
   } catch (error) {
-    if (error.code === 11000) return res.status(400).json({ error: "Такой slug уже существует" });
+    if (isUniqueConstraintError(error)) {
+      return res.status(400).json({ error: "Такой slug уже существует" });
+    }
     res.status(500).json({ error: "Ошибка обновления тега" });
   }
 });
 
-// DELETE /api/tags/:id — admin only
 router.delete("/:id", auth, async (req, res) => {
   try {
-    const tag = await Tag.findByIdAndDelete(req.params.id);
-    if (!tag) return res.status(404).json({ error: "Тег не найден" });
+    const ok = deleteTag(req.params.id);
+    if (!ok) return res.status(404).json({ error: "Тег не найден" });
     res.json({ message: "Тег удалён" });
   } catch (error) {
     res.status(500).json({ error: "Ошибка удаления тега" });

@@ -16,8 +16,10 @@ interface PostCardProps {
     excerpt_uz?: string;
     featured_image: string | null;
     created_at: string;
-    categories: { name: string; slug: string } | null;
-    post_tags: Array<{ tags: { name: string; slug: string } | null }>;
+    category?: { name: string; name_uz?: string; slug: string } | null;
+    categories?: { name: string; name_uz?: string; slug: string } | null;
+    tags?: Array<{ name: string; name_uz?: string; slug: string }>;
+    post_tags?: Array<{ tags: { name: string; name_uz?: string; slug: string } | null }>;
   };
 }
 
@@ -36,8 +38,15 @@ export function PostCard({ post }: PostCardProps) {
   const title = localized(post, "title") || post.title;
   const excerpt = localized(post, "excerpt") || post.excerpt;
 
-  const catKey = post.categories?.slug ? categoryI18nKey[post.categories.slug] : null;
-  const catName = (lang !== "ru" && catKey) ? t(catKey) : post.categories?.name;
+  const category = post.category || post.categories || null;
+  const catKey = category?.slug ? categoryI18nKey[category.slug] : null;
+  const catName = category
+    ? localized(category, "name") || (catKey && lang !== "ru" ? t(catKey) : null) || category.name
+    : null;
+
+  const postTags = post.tags
+    ? post.tags.map((tag) => ({ tags: tag }))
+    : post.post_tags || [];
 
   const dateLocale = lang === "uz" ? uz : ru;
 
@@ -55,8 +64,8 @@ export function PostCard({ post }: PostCardProps) {
       )}
       <CardContent className="p-4 md:p-5">
         <div className="flex items-center gap-2 mb-3 flex-wrap">
-          {catName && (
-            <Link to={`/category/${post.categories!.slug}`}>
+          {catName && category && (
+            <Link to={`/category/${category.slug}`}>
               <Badge variant="secondary" className="text-xs font-medium">
                 {catName}
               </Badge>
@@ -80,11 +89,11 @@ export function PostCard({ post }: PostCardProps) {
 
         <div className="flex items-center justify-between gap-2">
           <div className="flex gap-1 flex-wrap min-w-0">
-            {post.post_tags?.slice(0, 2).map((pt) =>
+            {postTags.slice(0, 2).map((pt) =>
               pt.tags ? (
                 <Link key={pt.tags.slug} to={`/tag/${pt.tags.slug}`}>
                   <Badge variant="outline" className="text-xs">
-                    #{pt.tags.name}
+                    #{localized(pt.tags, "name") || pt.tags.name}
                   </Badge>
                 </Link>
               ) : null

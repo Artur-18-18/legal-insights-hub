@@ -10,7 +10,7 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: MONGO_URI
+      - key: SQLITE_PATH
         sync: false
       - key: JWT_SECRET
         generateValue: true

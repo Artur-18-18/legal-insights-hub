@@ -205,3 +205,47 @@
 .ql-snow.ql-toolbar button.ql-active .ql-fill {
   fill: hsl(var(--gold));
 }
+
+/* Mobile-friendly Quill toolbar: allow wrap, compact spacing */
+@media (max-width: 640px) {
+  .ql-toolbar.ql-snow {
+    padding: 6px 4px;
+  }
+  .ql-toolbar.ql-snow .ql-formats {
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+  .ql-snow .ql-picker.ql-header {
+    width: 72px;
+  }
+  .ql-editor {
+    min-height: 220px;
+    font-size: 0.95rem;
+  }
+}
+
+/* Prevent horizontal overflow in admin editor */
+.quill-editor .ql-container,
+.quill-editor .ql-editor {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Fix focus outline on quill */
+.ql-editor:focus {
+  outline: none;
+}
+
+/* Global: prevent accidental horizontal scrolling on mobile */
+html,
+body {
+  overflow-x: hidden;
+}
+
+/* Make images inside articles responsive */
+.prose img,
+.ql-editor img {
+  max-width: 100%;
+  height: auto;
+}

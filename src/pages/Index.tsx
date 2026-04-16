@@ -37,7 +37,7 @@ const Index = () => {
   return (
     <Layout>
       <Helmet>
-        <title>{t("site.title")} — ЮристБлог</title>
+        <title>{t("site.title")} — {t("site.name")}</title>
         <meta name="description" content={t("site.subtitle")} />
         <meta property="og:title" content={t("site.title")} />
         <meta property="og:description" content={t("site.subtitle")} />
@@ -82,7 +82,7 @@ const Index = () => {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 md:gap-3">
             {categories.map((cat) => (
-              <CategoryCard key={cat.id} category={mapCategory(cat)} />
+              <CategoryCard key={cat.id || cat.slug} category={mapCategory(cat)} />
             ))}
           </div>
         )}

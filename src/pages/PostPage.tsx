@@ -49,12 +49,20 @@ const PostPage = () => {
 
   useEffect(() => {
     if (!slug) return;
+    setLoading(true);
     api.getPost(slug)
       .then((data) => {
+        const cat = data.category as { name: string; name_uz?: string; slug: string; icon?: string | null } | null;
         setPost({
           ...data,
-          categories: data.category ? { name: data.category.name, slug: data.category.slug, icon: data.category.icon } : null,
-          post_tags: data.tags ? data.tags.map((tag: { name: string; slug: string }) => ({ tags: { name: tag.name, slug: tag.slug } })) : [],
+          categories: cat
+            ? { name: cat.name, name_uz: cat.name_uz, slug: cat.slug, icon: cat.icon ?? null }
+            : null,
+          post_tags: data.tags
+            ? data.tags.map((tag: { name: string; name_uz?: string; slug: string }) => ({
+                tags: { name: tag.name, name_uz: tag.name_uz, slug: tag.slug },
+              }))
+            : [],
         });
       })
       .catch(() => {
@@ -116,8 +124,8 @@ const PostPage = () => {
     return (
       <Layout>
         <Helmet>
-          <title>Статья не найдена — ЮристБлог</title>
-          <meta name="description" content="Запрашиваемая статья не найдена" />
+          <title>{t("posts.notfound")} — {t("site.name")}</title>
+          <meta name="description" content={t("posts.notfound")} />
         </Helmet>
         <div className="container mx-auto px-4 py-16 text-center">
           <p className="text-muted-foreground text-lg">{t("posts.notfound")}</p>
@@ -141,7 +149,7 @@ const PostPage = () => {
   return (
     <Layout>
       <Helmet>
-        <title>{title} — ЮристБлог</title>
+        <title>{title} — {t("site.name")}</title>
         <meta name="description" content={seoDescription} />
         <meta property="og:title" content={title} />
         <meta property="og:description" content={seoDescription} />
@@ -173,9 +181,9 @@ const PostPage = () => {
           </div>
           <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold mb-3 md:mb-4">{title}</h1>
           {excerpt && <p className="text-base md:text-lg text-muted-foreground">{excerpt}</p>}
-          <div className="flex items-center gap-2 mt-4 print-hidden">
+          <div className="flex flex-wrap items-center gap-2 mt-4 print-hidden">
             <Button variant="outline" size="sm" onClick={() => window.print()}>
-              <FileText className="h-4 w-4 mr-1" /> {t("posts.pdf")}
+              <FileText className="h-4 w-4 mr-1" /> {t("posts.print")}
             </Button>
             <Button variant="outline" size="sm" onClick={downloadPdf} disabled={downloading}>
               {downloading ? (
@@ -183,7 +191,7 @@ const PostPage = () => {
               ) : (
                 <Download className="h-4 w-4 mr-1" />
               )}
-              Скачать PDF
+              {t("posts.download_pdf")}
             </Button>
           </div>
         </header>
@@ -226,7 +234,7 @@ const PostPage = () => {
               {post.post_videos && post.post_videos.length > 0 && (
                 <div>
                   <h3 className="font-serif text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-                    Видео
+                    {t("posts.videos")}
                   </h3>
                   <div className="space-y-3">
                     {post.post_videos.map((vid, i) => (

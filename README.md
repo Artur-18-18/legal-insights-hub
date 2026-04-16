@@ -9,18 +9,17 @@
 2. Нажмите **New Project** → **Deploy from GitHub repo**
 3. Выберите ваш репозиторий
 
-### Шаг 2: Добавьте MongoDB
-1. В проекте нажмите **New** → **Database** → **Add MongoDB**
-2. Railway автоматически создаст переменную `MONGO_URL`
+### Шаг 2: База данных
+Используется **SQLite** (файл по умолчанию `server/data/yuristblog.sqlite`). При необходимости задайте путь через переменную `SQLITE_PATH` и подключите постоянный том (volume), иначе данные сбросятся при пересборке контейнера.
 
 ### Шаг 3: Настройте переменные окружения
 В настройках проекта (Variables) добавьте:
 
 | Переменная | Значение |
 |---|---|
-| `MONGO_URI` | `${{MongoDB.MONGO_URL}}` (ссылка на Railway MongoDB) |
 | `JWT_SECRET` | Случайная строка (минимум 32 символа) |
 | `NODE_ENV` | `production` |
+| `SQLITE_PATH` | (опционально) абсолютный путь к файлу БД на томе |
 
 ### Шаг 4: Деплой
 Railway автоматически:
@@ -36,6 +35,11 @@ Railway автоматически:
 ### Установка зависимостей
 ```bash
 npm install
+```
+
+Если после **обновления Node.js** сервер падает с ошибкой `better_sqlite3.node` / `NODE_MODULE_VERSION`, пересоберите нативный модуль:
+```bash
+npm rebuild better-sqlite3
 ```
 
 ### Запуск
@@ -62,8 +66,9 @@ npm run server:dev
 ```
 ├── server/           # Express.js бэкенд
 │   ├── index.js      # Точка входа сервера
-│   ├── db.js         # Подключение к MongoDB
-│   ├── models/       # Mongoose модели
+│   ├── db.js         # Подключение к SQLite
+│   ├── database.js   # Схема и запросы к БД
+│   ├── data/         # Файл SQLite (yuristblog.sqlite, не в git)
 │   └── routes/       # API маршруты
 ├── src/              # React фронтенд
 │   ├── pages/        # Страницы
@@ -78,7 +83,7 @@ npm run server:dev
 ## 🔧 Технологии
 
 - **Фронтенд:** React 18 + TypeScript, Vite, Tailwind CSS, shadcn/ui, Quill Editor
-- **Бэкенд:** Express.js 5, MongoDB (Mongoose)
+- **Бэкенд:** Express.js 5, SQLite (better-sqlite3)
 - **Авторизация:** JWT (jsonwebtoken), bcryptjs
 - **PDF:** html2pdf.js
 - **SEO:** react-helmet-async

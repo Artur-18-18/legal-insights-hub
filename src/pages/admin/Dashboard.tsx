@@ -33,18 +33,18 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-serif font-bold">{t("admin.dashboard")}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 md:mb-6">
+        <h1 className="text-xl sm:text-2xl font-serif font-bold">{t("admin.dashboard")}</h1>
         <Link
           to="/admin/posts/new"
-          className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
+          className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity w-full sm:w-auto"
         >
           <TrendingUp className="h-4 w-4" /> {t("admin.new_article")}
         </Link>
       </div>
 
       {loading ? (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i}>
               <CardContent className="p-6">
@@ -57,18 +57,18 @@ export default function AdminDashboard() {
           ))}
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {statCards.map((stat) => {
             const Icon = stat.icon;
             return (
               <Card key={stat.title}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
+                  <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground line-clamp-1">{stat.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <span className="text-3xl font-bold">{stat.value}</span>
-                    <Icon className={`h-8 w-8 ${stat.color}`} />
+                    <span className="text-2xl sm:text-3xl font-bold">{stat.value}</span>
+                    <Icon className={`h-6 w-6 sm:h-8 sm:w-8 ${stat.color}`} />
                   </div>
                   <Link to={stat.link} className="text-xs text-muted-foreground hover:text-foreground mt-2 block">
                     {t("posts.read")} →
@@ -80,12 +80,12 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>{t("admin.quick_actions")}</CardTitle>
+      <Card className="mt-4 md:mt-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base md:text-lg">{t("admin.quick_actions")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <Link to="/admin/posts/new" className="block p-4 border rounded-md hover:bg-muted transition-colors">
               <FileText className="h-5 w-5 text-primary mb-2" />
               <p className="font-medium text-sm">{t("admin.create_article")}</p>

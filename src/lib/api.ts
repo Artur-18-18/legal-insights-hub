@@ -2,7 +2,7 @@ const API_URL = ""; // Same-origin in production, proxy in dev
 
 interface Category {
   _id?: string;
-  id: string;
+  id?: string;
   name: string;
   name_uz?: string;
   slug: string;
@@ -13,7 +13,7 @@ interface Category {
 
 interface Tag {
   _id?: string;
-  id: string;
+  id?: string;
   name: string;
   name_uz?: string;
   slug: string;
@@ -41,9 +41,14 @@ interface Post {
 }
 
 async function fetchAPI(endpoint: string, options?: RequestInit): Promise<unknown> {
+  // Spread `options` first, then set `headers`, so callers' Authorization is kept and
+  // Content-Type is never dropped (previously ...options overwrote merged headers).
   const res = await fetch(`${API_URL}/api${endpoint}`, {
-    headers: { "Content-Type": "application/json", ...options?.headers },
     ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options?.headers as Record<string, string> | undefined),
+    },
   });
 
   if (!res.ok) {
@@ -68,6 +73,15 @@ export const api = {
   getPost: async (slug: string) => {
     return fetchAPI(`/posts/${slug}`) as Promise<Post>;
   },
+  getPostBySlug: async (slug: string) => {
+    return fetchAPI(`/posts/${slug}`) as Promise<Post>;
+  },
+  /** Загрузка поста по id (админка, редактирование) */
+  getPostForAdmin: async (id: string) => {
+    return fetchAPI(`/posts/admin/post/${id}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+    }) as Promise<Post>;
+  },
   createPost: async (body: unknown) => {
     return fetchAPI("/posts", {
       method: "POST",
@@ -91,7 +105,11 @@ export const api = {
 
   // Categories
   getCategories: async () => {
-    return fetchAPI("/categories") as Promise<Category[]>;
+    const categories = (await fetchAPI("/categories")) as Category[];
+    return categories.map((category) => ({
+      ...category,
+      id: category.id || category._id,
+    }));
   },
   createCategory: async (body: unknown) => {
     return fetchAPI("/categories", {
@@ -116,7 +134,11 @@ export const api = {
 
   // Tags
   getTags: async () => {
-    return fetchAPI("/tags") as Promise<Tag[]>;
+    const tags = (await fetchAPI("/tags")) as Tag[];
+    return tags.map((tag) => ({
+      ...tag,
+      id: tag.id || tag._id,
+    }));
   },
   createTag: async (body: unknown) => {
     return fetchAPI("/tags", {
@@ -142,6 +164,22 @@ export const api = {
   // Stats
   getStats: async () => {
     return fetchAPI("/stats") as Promise<{ posts: number; drafts: number; categories: number; tags: number }>;
+  },
+
+  // Translation
+  translate: async (payload: { text: string; source?: "ru" | "uz"; target?: "ru" | "uz"; format?: "text" | "html" }) => {
+    return fetchAPI("/translate", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      body: JSON.stringify(payload),
+    }) as Promise<{ translated: string }>;
+  },
+  translateBatch: async (payload: { items: Array<{ text: string; format?: "text" | "html"; field?: string }>; source?: "ru" | "uz"; target?: "ru" | "uz" }) => {
+    return fetchAPI("/translate/batch", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      body: JSON.stringify(payload),
+    }) as Promise<{ results: Array<{ field?: string; translated: string; error?: string }> }>;
   },
 
   // Auth
