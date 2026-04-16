@@ -6,7 +6,6 @@ import {
   FileText,
   FolderOpen,
   Tags,
-  Image,
   LogOut,
   Menu,
   Scale,
@@ -25,7 +24,6 @@ const useAdminNav = () => {
     { icon: FileText, label: t("admin.posts"), path: "/admin/posts" },
     { icon: FolderOpen, label: t("admin.categories"), path: "/admin/categories" },
     { icon: Tags, label: t("admin.tags"), path: "/admin/tags" },
-    { icon: Image, label: t("admin.images"), path: "/admin/images" },
   ];
 };
 

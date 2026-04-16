@@ -18,7 +18,6 @@ import PostsList from "./pages/admin/PostsList";
 import PostForm from "./pages/admin/PostForm";
 import CategoriesList from "./pages/admin/CategoriesList";
 import TagsList from "./pages/admin/TagsList";
-import ImagesPage from "./pages/admin/ImagesPage";
 
 // Protected route component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -64,7 +63,6 @@ const App = () => (
                 <Route path="posts/edit/:id" element={<PostForm />} />
                 <Route path="categories" element={<CategoriesList />} />
                 <Route path="tags" element={<TagsList />} />
-                <Route path="images" element={<ImagesPage />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

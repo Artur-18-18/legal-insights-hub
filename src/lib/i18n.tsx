@@ -449,13 +449,14 @@ export function useLocalized() {
   const { lang } = useI18n();
   const isUz = lang === "uz";
 
-  return (obj: Record<string, unknown> | null | undefined, field: string): string | null => {
-    if (!obj) return null;
+  return (obj: object | null | undefined, field: string): string | null => {
+    if (!obj || typeof obj !== "object") return null;
+    const o = obj as Record<string, unknown>;
     const asStr = (v: unknown): string | null => (typeof v === "string" ? v : null);
     if (isUz) {
       const uzField = `${field}_uz`;
-      return asStr(obj[uzField]) || asStr(obj[field]) || null;
+      return asStr(o[uzField]) || asStr(o[field]) || null;
     }
-    return asStr(obj[field]) || null;
+    return asStr(o[field]) || null;
   };
 }

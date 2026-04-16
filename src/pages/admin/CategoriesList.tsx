@@ -55,7 +55,7 @@ export default function CategoriesList() {
   const [description, setDescription] = useState("");
   const [descriptionUz, setDescriptionUz] = useState("");
   const [icon, setIcon] = useState("");
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   const { t } = useI18n();
@@ -162,11 +162,12 @@ export default function CategoriesList() {
   };
 
   const handleDelete = async () => {
-    if (!deleteId) return;
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
     try {
-      await api.deleteCategory(deleteId);
+      await api.deleteCategory(id);
       toast({ title: t("admin.delete"), description: t("admin.cat_deleted") });
-      setCategories(categories.filter((c) => c.id !== deleteId));
+      setCategories((prev) => prev.filter((c) => c.id !== id));
     } catch {
       toast({
         title: t("admin.error"),
@@ -174,7 +175,7 @@ export default function CategoriesList() {
         variant: "destructive",
       });
     }
-    setDeleteId(null);
+    setDeleteTarget(null);
   };
 
   if (loading)
@@ -186,15 +187,24 @@ export default function CategoriesList() {
         <h1 className="text-xl sm:text-2xl font-serif font-bold">
           {t("admin.categories_title")}
         </h1>
-        <Button onClick={openCreate} className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" /> {t("admin.new_category_btn")}
+        <Button
+          onClick={openCreate}
+          className="w-full sm:w-auto min-h-11 touch-manipulation"
+        >
+          <Plus className="h-4 w-4 mr-2 shrink-0" /> {t("admin.new_category_btn")}
         </Button>
       </div>
 
       {categories.length === 0 ? (
-        <div className="text-center py-12 bg-card rounded-lg border">
+        <div className="text-center py-12 px-4 bg-card rounded-lg border">
           <FolderOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-          <p className="text-muted-foreground">{t("admin.no_categories")}</p>
+          <p className="text-muted-foreground mb-4">{t("admin.no_categories")}</p>
+          <Button
+            onClick={openCreate}
+            className="min-h-11 touch-manipulation w-full max-w-sm mx-auto"
+          >
+            <Plus className="h-4 w-4 mr-2 shrink-0" /> {t("admin.new_category_btn")}
+          </Button>
         </div>
       ) : (
         <>
@@ -220,23 +230,22 @@ export default function CategoriesList() {
                     )}
                   </div>
                 </div>
-                <div className="flex gap-2 mt-3">
+                <div className="flex flex-col gap-2 mt-3">
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="flex-1"
+                    className="w-full min-h-11 touch-manipulation justify-center"
                     onClick={() => openEdit(cat)}
                   >
-                    <Edit className="h-3.5 w-3.5 mr-1.5" />
+                    <Edit className="h-4 w-4 mr-2 shrink-0" />
                     {t("admin.edit")}
                   </Button>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                    onClick={() => setDeleteId(cat.id)}
+                    className="w-full min-h-11 touch-manipulation justify-center text-destructive border-destructive/40 hover:bg-destructive/10"
+                    onClick={() => setDeleteTarget(cat)}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-4 w-4 mr-2 shrink-0" />
+                    {t("admin.delete")}
                   </Button>
                 </div>
               </div>
@@ -282,7 +291,9 @@ export default function CategoriesList() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => setDeleteId(cat.id)}
+                          className="touch-manipulation"
+                          onClick={() => setDeleteTarget(cat)}
+                          aria-label={t("admin.delete")}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -297,7 +308,7 @@ export default function CategoriesList() {
       )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90dvh] overflow-y-auto w-[calc(100vw-1.5rem)] sm:w-full gap-0 p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>
               {editingId ? t("admin.edit_cat") : t("admin.new_cat_dialog")}
@@ -381,19 +392,19 @@ export default function CategoriesList() {
                 placeholder="Building2"
               />
             </div>
-            <DialogFooter className="flex-col sm:flex-row gap-2">
+            <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setModalOpen(false)}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto min-h-11 touch-manipulation"
               >
                 {t("admin.cancel")}
               </Button>
               <Button
                 type="submit"
                 disabled={saving}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto min-h-11 touch-manipulation"
               >
                 {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {editingId ? t("admin.save") : t("admin.create")}
@@ -404,21 +415,32 @@ export default function CategoriesList() {
       </Dialog>
 
       <AlertDialog
-        open={!!deleteId}
-        onOpenChange={() => setDeleteId(null)}
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>{t("admin.delete_confirm_cat")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("admin.delete_confirm_cat_desc")}
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>{t("admin.delete_confirm_cat_desc")}</p>
+                {deleteTarget && (
+                  <p className="font-medium text-foreground text-base break-words">
+                    «{localized(deleteTarget, "name") || deleteTarget.name}»
+                  </p>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("admin.cancel")}</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel className="min-h-11 touch-manipulation w-full sm:w-auto mt-0">
+              {t("admin.cancel")}
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 min-h-11 touch-manipulation w-full sm:w-auto"
             >
               {t("admin.delete")}
             </AlertDialogAction>
