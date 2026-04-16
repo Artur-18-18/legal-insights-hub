@@ -334,9 +334,7 @@ export default function CategoriesList() {
               />
             </div>
             <div>
-              <Label htmlFor="cat-name-uz">
-                {t("admin.cat_name")} (O'zbekcha)
-              </Label>
+              <Label htmlFor="cat-name-uz">{t("admin.cat_name_uz_label")}</Label>
               <Input
                 id="cat-name-uz"
                 value={nameUz}
@@ -373,9 +371,7 @@ export default function CategoriesList() {
               />
             </div>
             <div>
-              <Label htmlFor="cat-desc-uz">
-                {t("admin.cat_desc")} (O'zbekcha)
-              </Label>
+              <Label htmlFor="cat-desc-uz">{t("admin.cat_desc_uz_label")}</Label>
               <Textarea
                 id="cat-desc-uz"
                 value={descriptionUz}
