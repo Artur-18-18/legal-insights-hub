@@ -29,7 +29,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { useI18n, useLocalized } from "@/lib/i18n";
 import { TranslateButton } from "@/components/TranslateButton";
 import { cn } from "@/lib/utils";
@@ -100,7 +100,6 @@ export default function PostForm() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [translatingAll, setTranslatingAll] = useState(false);
-  const [activeLang, setActiveLang] = useState<"ru" | "uz">("ru");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -320,7 +319,6 @@ export default function PostForm() {
         title: t("translate.success"),
         description: t("translate.success_desc"),
       });
-      setActiveLang("uz");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t("translate.error_desc");
       toast({ title: t("translate.error"), description: msg, variant: "destructive" });
@@ -460,20 +458,7 @@ export default function PostForm() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Tabs
-                  value={activeLang}
-                  onValueChange={(v) => setActiveLang(v as "ru" | "uz")}
-                >
-                  <TabsList className="grid grid-cols-2 w-full sm:w-auto">
-                    <TabsTrigger value="ru" className="flex items-center gap-1.5">
-                      <span>🇷🇺</span> {t("admin.lang_ru")}
-                    </TabsTrigger>
-                    <TabsTrigger value="uz" className="flex items-center gap-1.5">
-                      <span>🇺🇿</span> {t("admin.lang_uz")}
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="ru" className="space-y-4 mt-4">
+                <div className="space-y-4">
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <Label htmlFor="title">{t("admin.title")} *</Label>
@@ -550,13 +535,15 @@ export default function PostForm() {
                         />
                       </div>
                     </div>
-                  </TabsContent>
+                </div>
 
-                  <TabsContent value="uz" className="space-y-4 mt-4">
+                <Separator className="my-2" />
+
+                <div className="space-y-4">
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <Label htmlFor="title-uz">
-                          {t("admin.title")} (O'zbekcha)
+                          {t("admin.title_uz_label")}
                         </Label>
                         <TranslateButton
                           value={titleUz}
@@ -576,7 +563,7 @@ export default function PostForm() {
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <Label htmlFor="excerpt-uz">
-                          {t("admin.excerpt")} (O'zbekcha)
+                          {t("admin.excerpt_uz_label")}
                         </Label>
                         <TranslateButton
                           value={excerptUz}
@@ -597,7 +584,7 @@ export default function PostForm() {
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <Label htmlFor="content-uz">
-                          {t("admin.content")} (O'zbekcha)
+                          {t("admin.content_uz_label")}
                         </Label>
                         <TranslateButton
                           value={contentUz}
@@ -620,8 +607,7 @@ export default function PostForm() {
                         />
                       </div>
                     </div>
-                  </TabsContent>
-                </Tabs>
+                </div>
               </CardContent>
             </Card>
 
