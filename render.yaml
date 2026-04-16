@@ -1,9 +1,15 @@
+# Starter + disk: SQLite survives redeploys. Free tier cannot attach a disk — use Starter or expect an empty DB after each deploy.
 services:
   - type: web
     name: yuristblog
     env: node
     region: frankfurt
-    plan: free
+    # Persistent disk requires Starter or higher (not available on Free — DB would reset on each deploy)
+    plan: starter
+    disk:
+      name: sqlite-data
+      mountPath: /var/data
+      sizeGB: 1
     buildCommand: npm ci && npx vite build
     startCommand: NODE_ENV=production node server/index.js
     healthCheckPath: /api/stats
@@ -11,7 +17,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: SQLITE_PATH
-        sync: false
+        value: /var/data/yuristblog.sqlite
       - key: JWT_SECRET
         generateValue: true
         sync: false

@@ -280,9 +280,7 @@ export default function TagsList() {
               />
             </div>
             <div>
-              <Label htmlFor="tag-name-uz">
-                {t("admin.tag_name")} (O'zbekcha)
-              </Label>
+              <Label htmlFor="tag-name-uz">{t("admin.tag_name_uz_label")}</Label>
               <Input
                 id="tag-name-uz"
                 value={nameUz}

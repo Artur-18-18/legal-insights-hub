@@ -56,8 +56,10 @@ npm run server:dev
 
 ### Админ-панель
 - URL: `/admin/login`
-- Email: `admin@example.com`
+- Email: `admin@yurist.uz`
 - Пароль: `admin123`
+
+База SQLite хранится в `server/data/yuristblog.sqlite` (не коммитится в git). На хостингах без постоянного диска файл может сбрасываться при деплое — см. `RENDER_DEPLOY.md`.
 
 ---
 

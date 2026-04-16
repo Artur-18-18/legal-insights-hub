@@ -122,6 +122,11 @@ export function initDatabase() {
   const dataDir = path.join(__dirname, "data");
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
   const dbPath = process.env.SQLITE_PATH || path.join(dataDir, "yuristblog.sqlite");
+  const dbDir = path.dirname(path.resolve(dbPath));
+  if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
+  if (process.env.NODE_ENV === "production") {
+    console.log("SQLite database file:", dbPath);
+  }
   db = new Database(dbPath);
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");

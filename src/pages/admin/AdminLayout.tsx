@@ -146,9 +146,9 @@ export default function AdminLayout() {
           </div>
           <div className="flex items-center gap-1 sm:gap-3">
             <LangToggle />
-            <div className="hidden sm:flex text-sm items-center gap-1">
+            <div className="hidden sm:flex text-sm items-center gap-1 font-sans">
               <span className="text-muted-foreground">{t("admin.user")}:</span>{" "}
-              <span className="font-medium">
+              <span className="font-medium text-foreground antialiased">
                 {user?.name ||
                   (lang === "uz" ? "Administrator" : "Администратор")}
               </span>
