@@ -120,7 +120,7 @@ export default function PostsList() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 md:mb-6">
-        <h1 className="text-xl sm:text-2xl font-serif font-bold">
+        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
           {t("admin.posts_title")}
         </h1>
         <Link to="/admin/posts/new" className="sm:w-auto">

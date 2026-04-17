@@ -34,13 +34,13 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 font-sans antialiased">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <Scale className="h-10 w-10 text-gold" />
           </div>
-          <CardTitle className="font-serif text-2xl">{t("admin.login")}</CardTitle>
+          <CardTitle className="text-2xl">{t("admin.login")}</CardTitle>
           <CardDescription>{t("admin.enter_login")}</CardDescription>
         </CardHeader>
         <CardContent>

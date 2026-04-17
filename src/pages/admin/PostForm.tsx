@@ -418,7 +418,7 @@ export default function PostForm() {
   return (
     <div className="max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-serif font-bold">
+        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
           {isEdit ? t("admin.edit_article") : t("admin.new_article")}
         </h1>
         <div className="flex items-center gap-2">

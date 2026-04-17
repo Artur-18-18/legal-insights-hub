@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { decodeJwtPayload } from "@/lib/jwtPayload";
 
 interface User {
   id: string;
@@ -24,20 +25,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Decode token and restore session on mount
   useEffect(() => {
     if (token) {
-      try {
-        // JWT payload is in the second part of the token
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        setUser({
-          id: payload.id || "1",
-          email: payload.email,
-          name: payload.name || "Администратор",
-          role: payload.role || "admin",
-        });
-      } catch {
-        // Invalid token — clear it
+      const payload = decodeJwtPayload<{
+        id?: string;
+        email?: string;
+        name?: string;
+        role?: string;
+      }>(token);
+      if (!payload) {
         setToken(null);
         localStorage.removeItem("admin_token");
+        return;
       }
+      setUser({
+        id: payload.id || "1",
+        email: payload.email ?? "",
+        name: typeof payload.name === "string" ? payload.name : "",
+        role: payload.role || "admin",
+      });
     }
   }, [token]);
 

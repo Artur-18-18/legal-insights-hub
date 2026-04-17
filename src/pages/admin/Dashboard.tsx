@@ -34,7 +34,7 @@ export default function AdminDashboard() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 md:mb-6">
-        <h1 className="text-xl sm:text-2xl font-serif font-bold">{t("admin.dashboard")}</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{t("admin.dashboard")}</h1>
         <Link
           to="/admin/posts/new"
           className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity w-full sm:w-auto"

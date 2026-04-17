@@ -42,7 +42,7 @@ function SidebarContent({
     <div className="flex flex-col h-full">
       <div className="p-4 border-b flex items-center gap-2">
         <Scale className="h-6 w-6 text-gold" />
-        <span className="font-serif font-bold text-lg">{t("site.name")}</span>
+        <span className="font-semibold text-lg tracking-tight">{t("site.name")}</span>
       </div>
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
@@ -97,7 +97,7 @@ export default function AdminLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
 
   const handleLogout = () => {
     logout();
@@ -105,7 +105,7 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30 flex">
+    <div className="min-h-screen bg-muted/30 flex font-sans antialiased text-foreground">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex w-64 bg-card border-r flex-col shrink-0">
         <SidebarContent onLogout={handleLogout} />
@@ -140,17 +140,16 @@ export default function AdminLayout() {
               </SheetTrigger>
             </Sheet>
             <Scale className="h-5 w-5 text-gold lg:hidden" />
-            <span className="font-serif font-bold text-sm sm:text-base lg:hidden">
+            <span className="font-semibold text-sm sm:text-base tracking-tight lg:hidden">
               {t("site.name")}
             </span>
           </div>
           <div className="flex items-center gap-1 sm:gap-3">
             <LangToggle />
-            <div className="hidden sm:flex text-sm items-center gap-1 font-sans">
+            <div className="hidden sm:flex text-sm items-center gap-1">
               <span className="text-muted-foreground">{t("admin.user")}:</span>{" "}
               <span className="font-medium text-foreground antialiased">
-                {user?.name ||
-                  (lang === "uz" ? "Administrator" : "Администратор")}
+                {user?.name?.trim() || t("admin.user_display_fallback")}
               </span>
             </div>
           </div>
