@@ -725,7 +725,7 @@ export async function seedDatabase() {
     await createUser({
       email: "admin@yurist.uz",
       password: "admin123",
-      name: "Администратор",
+      name: "Ismoiljon",
       role: "admin",
     });
     console.log("Default admin user created: admin@yurist.uz / admin123");
