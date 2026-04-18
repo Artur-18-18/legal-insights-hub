@@ -40,6 +40,18 @@ interface Post {
   post_videos?: Array<{ url: string; alt_text: string | null }>;
 }
 
+/** Заголовки авторизации: Bearer + резервный X-Access-Token (часть прокси обрезает только Authorization). */
+export function getAuthHeaders(tokenOverride?: string | null): Record<string, string> {
+  const t =
+    tokenOverride ??
+    (typeof localStorage !== "undefined" ? localStorage.getItem("admin_token") : null);
+  if (!t) return {};
+  return {
+    Authorization: `Bearer ${t}`,
+    "X-Access-Token": t,
+  };
+}
+
 function mergeRequestHeaders(options?: RequestInit): Record<string, string> {
   const out: Record<string, string> = { "Content-Type": "application/json" };
   const h = options?.headers;
@@ -80,7 +92,7 @@ export const api = {
   },
   getAllPosts: async () => {
     return fetchAPI("/posts/admin/all", {
-      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      headers: getAuthHeaders(),
     }) as Promise<Post[]>;
   },
   getPost: async (slug: string) => {
@@ -92,27 +104,27 @@ export const api = {
   /** Загрузка поста по id (админка, редактирование) */
   getPostForAdmin: async (id: string) => {
     return fetchAPI(`/posts/admin/post/${id}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      headers: getAuthHeaders(),
     }) as Promise<Post>;
   },
   createPost: async (body: unknown) => {
     return fetchAPI("/posts", {
       method: "POST",
-      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      headers: getAuthHeaders(),
       body: JSON.stringify(body),
     }) as Promise<Post>;
   },
   updatePost: async (id: string, body: unknown) => {
     return fetchAPI(`/posts/${id}`, {
       method: "PUT",
-      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      headers: getAuthHeaders(),
       body: JSON.stringify(body),
     }) as Promise<Post>;
   },
   deletePost: async (id: string) => {
     return fetchAPI(`/posts/${id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      headers: getAuthHeaders(),
     }) as Promise<Record<string, unknown>>;
   },
 
@@ -127,23 +139,21 @@ export const api = {
   createCategory: async (body: unknown) => {
     return fetchAPI("/categories", {
       method: "POST",
-      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      headers: getAuthHeaders(),
       body: JSON.stringify(body),
     }) as Promise<Category>;
   },
   updateCategory: async (id: string, body: unknown, token?: string | null) => {
-    const t = token ?? localStorage.getItem("admin_token");
     return fetchAPI(`/categories/admin/${encodeURIComponent(id)}`, {
       method: "PUT",
-      headers: t ? { Authorization: `Bearer ${t}` } : {},
+      headers: getAuthHeaders(token),
       body: JSON.stringify(body),
     }) as Promise<Category>;
   },
   deleteCategory: async (id: string, token?: string | null) => {
-    const t = token ?? localStorage.getItem("admin_token");
     return fetchAPI(`/categories/admin/${encodeURIComponent(id)}`, {
       method: "DELETE",
-      headers: t ? { Authorization: `Bearer ${t}` } : {},
+      headers: getAuthHeaders(token),
     }) as Promise<Record<string, unknown>>;
   },
 
@@ -158,21 +168,21 @@ export const api = {
   createTag: async (body: unknown) => {
     return fetchAPI("/tags", {
       method: "POST",
-      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      headers: getAuthHeaders(),
       body: JSON.stringify(body),
     }) as Promise<Tag>;
   },
   updateTag: async (id: string, body: unknown) => {
     return fetchAPI(`/tags/${id}`, {
       method: "PUT",
-      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      headers: getAuthHeaders(),
       body: JSON.stringify(body),
     }) as Promise<Tag>;
   },
   deleteTag: async (id: string) => {
     return fetchAPI(`/tags/${id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      headers: getAuthHeaders(),
     }) as Promise<Record<string, unknown>>;
   },
 
@@ -185,14 +195,14 @@ export const api = {
   translate: async (payload: { text: string; source?: "ru" | "uz"; target?: "ru" | "uz"; format?: "text" | "html" }) => {
     return fetchAPI("/translate", {
       method: "POST",
-      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     }) as Promise<{ translated: string }>;
   },
   translateBatch: async (payload: { items: Array<{ text: string; format?: "text" | "html"; field?: string }>; source?: "ru" | "uz"; target?: "ru" | "uz" }) => {
     return fetchAPI("/translate/batch", {
       method: "POST",
-      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     }) as Promise<{ results: Array<{ field?: string; translated: string; error?: string }> }>;
   },

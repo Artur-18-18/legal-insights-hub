@@ -22,12 +22,14 @@ const app = express();
 const PORT = process.env.PORT || process.env.SERVER_PORT || 3001;
 const isProduction = process.env.NODE_ENV === "production";
 
-if (isProduction) {
-  app.use(cors());
-  app.use(express.static(path.join(__dirname, "..", "dist"), { maxAge: "1d" }));
-} else {
-  app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:8080" }));
-}
+const corsOptions = {
+  // Отражаем Origin запроса — и localhost, и 127.0.0.1 в dev, и прод с одного хоста
+  origin: true,
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization", "X-Access-Token"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
+};
+app.use(cors(corsOptions));
 
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true, limit: "25mb" }));
@@ -49,6 +51,7 @@ app.get("/api/stats", async (req, res) => {
 });
 
 if (isProduction) {
+  app.use(express.static(path.join(__dirname, "..", "dist"), { maxAge: "1d" }));
   app.get("{*path}", (req, res) => {
     res.sendFile(path.join(__dirname, "..", "dist", "index.html"));
   });

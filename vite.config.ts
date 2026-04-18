@@ -16,6 +16,14 @@ export default defineConfig(({ mode }) => ({
       "/api": {
         target: "http://localhost:3001",
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyReq, req) => {
+            const auth = req.headers.authorization;
+            if (auth) proxyReq.setHeader("Authorization", auth);
+            const x = req.headers["x-access-token"];
+            if (x) proxyReq.setHeader("X-Access-Token", x);
+          });
+        },
       },
       "/uploads": {
         target: "http://localhost:3001",
