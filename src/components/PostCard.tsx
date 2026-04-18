@@ -3,23 +3,23 @@ import { Calendar, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
-import { ru } from "date-fns/locale";
-import { useI18n, useLocalized } from "@/lib/i18n";
-import { uz } from "date-fns/locale";
+import { useI18n, useLocalized, getDateFnsLocale } from "@/lib/i18n";
 
 interface PostCardProps {
   post: {
     title: string;
     title_uz?: string;
+    title_en?: string;
     slug: string;
     excerpt: string | null;
     excerpt_uz?: string;
+    excerpt_en?: string;
     featured_image: string | null;
     created_at: string;
-    category?: { name: string; name_uz?: string; slug: string } | null;
-    categories?: { name: string; name_uz?: string; slug: string } | null;
-    tags?: Array<{ name: string; name_uz?: string; slug: string }>;
-    post_tags?: Array<{ tags: { name: string; name_uz?: string; slug: string } | null }>;
+    category?: { name: string; name_uz?: string; name_en?: string; slug: string } | null;
+    categories?: { name: string; name_uz?: string; name_en?: string; slug: string } | null;
+    tags?: Array<{ name: string; name_uz?: string; name_en?: string; slug: string }>;
+    post_tags?: Array<{ tags: { name: string; name_uz?: string; name_en?: string; slug: string } | null }>;
   };
 }
 
@@ -48,7 +48,7 @@ export function PostCard({ post }: PostCardProps) {
     ? post.tags.map((tag) => ({ tags: tag }))
     : post.post_tags || [];
 
-  const dateLocale = lang === "uz" ? uz : ru;
+  const dateLocale = getDateFnsLocale(lang);
 
   return (
     <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50">

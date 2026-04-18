@@ -14,9 +14,11 @@ interface CategoryCardProps {
   category: {
     name: string;
     name_uz?: string;
+    name_en?: string;
     slug: string;
     description: string | null;
     description_uz?: string;
+    description_en?: string;
     icon: string | null;
   };
 }

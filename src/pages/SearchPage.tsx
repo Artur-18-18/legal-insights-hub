@@ -16,6 +16,7 @@ interface TagItem {
   id?: string;
   name: string;
   name_uz?: string;
+  name_en?: string;
   slug: string;
 }
 
@@ -23,9 +24,15 @@ interface Post {
   _id: string;
   id?: string;
   title: string;
+  title_uz?: string;
+  title_en?: string;
   slug: string;
   excerpt: string | null;
+  excerpt_uz?: string;
+  excerpt_en?: string;
   content: string;
+  content_uz?: string;
+  content_en?: string;
   featured_image: string | null;
   created_at: string;
   author_name: string;
@@ -44,6 +51,8 @@ const SearchPage = () => {
   const [tags, setTags] = useState<TagItem[]>(mockTags);
   const [loading, setLoading] = useState(false);
   const { t } = useI18n();
+  const siteName = t("site.name");
+  const searchLabel = t("seo.search");
   const localized = useLocalized();
 
   useEffect(() => {
@@ -61,12 +70,19 @@ const SearchPage = () => {
     api.getPosts()
       .then((allPosts: Post[]) => {
         const q = initialQuery.toLowerCase();
+        const inStr = (s: string | null | undefined) => (s ?? "").toLowerCase().includes(q);
         const filtered = allPosts.filter(
           (p) =>
             p.published &&
-            (p.title.toLowerCase().includes(q) ||
-              p.content.toLowerCase().includes(q) ||
-              p.excerpt?.toLowerCase().includes(q))
+            (inStr(p.title) ||
+              inStr(p.title_uz) ||
+              inStr(p.title_en) ||
+              inStr(p.content) ||
+              inStr(p.content_uz) ||
+              inStr(p.content_en) ||
+              inStr(p.excerpt) ||
+              inStr(p.excerpt_uz) ||
+              inStr(p.excerpt_en)),
         );
         setResults(filtered);
       })
@@ -84,10 +100,35 @@ const SearchPage = () => {
   return (
     <Layout>
       <Helmet>
-        <title>{initialQuery ? `Поиск: ${initialQuery} — ЮристБлог` : `Поиск — ЮристБлог`}</title>
-        <meta name="description" content={initialQuery ? `Результаты поиска по запросу "${initialQuery}"` : "Поиск по статьям и юридическим материалам"} />
-        <meta property="og:title" content={initialQuery ? `Поиск: ${initialQuery}` : "Поиск"} />
-        <meta property="og:description" content="Поиск по статьям и юридическим материалам" />
+        <title>
+          {initialQuery
+            ? t("seo.search_title_q", {
+                search: searchLabel,
+                query: initialQuery,
+                site: siteName,
+              })
+            : t("seo.search_title_only", { search: searchLabel, site: siteName })}
+        </title>
+        <meta
+          name="description"
+          content={
+            initialQuery
+              ? t("seo.search_meta_q", { query: initialQuery })
+              : t("seo.search_meta_empty")
+          }
+        />
+        <meta
+          property="og:title"
+          content={
+            initialQuery
+              ? t("seo.search_og_title_q", {
+                  search: searchLabel,
+                  query: initialQuery,
+                })
+              : t("seo.search_og_title_empty", { search: searchLabel })
+          }
+        />
+        <meta property="og:description" content={t("seo.search_og_desc")} />
         <meta property="og:type" content="website" />
         <link rel="canonical" href={`${typeof window !== "undefined" ? window.location.origin : ""}/search${initialQuery ? `?q=${encodeURIComponent(initialQuery)}` : ""}`} />
       </Helmet>

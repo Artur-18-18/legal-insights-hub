@@ -39,6 +39,7 @@ interface Category {
   _id: string;
   name: string;
   name_uz?: string;
+  name_en?: string;
   slug: string;
 }
 
@@ -46,6 +47,7 @@ interface Tag {
   _id: string;
   name: string;
   name_uz?: string;
+  name_en?: string;
   slug: string;
 }
 
@@ -53,11 +55,14 @@ interface PostResponse {
   _id: string;
   title: string;
   title_uz?: string;
+  title_en?: string;
   slug: string;
   excerpt?: string;
   excerpt_uz?: string;
+  excerpt_en?: string;
   content: string;
   content_uz?: string;
+  content_en?: string;
   author_name?: string;
   published: boolean;
   category?: string | Category;
@@ -83,6 +88,9 @@ export default function PostForm() {
   const [excerptUz, setExcerptUz] = useState("");
   const [content, setContent] = useState("");
   const [contentUz, setContentUz] = useState("");
+  const [titleEn, setTitleEn] = useState("");
+  const [excerptEn, setExcerptEn] = useState("");
+  const [contentEn, setContentEn] = useState("");
   const [authorName, setAuthorName] = useState("");
   const [published, setPublished] = useState(false);
   const [autoTranslate, setAutoTranslate] = useState(true);
@@ -160,6 +168,9 @@ export default function PostForm() {
             setExcerptUz(post.excerpt_uz || "");
             setContent(post.content || "");
             setContentUz(post.content_uz || "");
+            setTitleEn(post.title_en || "");
+            setExcerptEn(post.excerpt_en || "");
+            setContentEn(post.content_en || "");
             setAuthorName(post.author_name || "Автор");
             setPublished(post.published || false);
 
@@ -329,31 +340,99 @@ export default function PostForm() {
     }
   };
 
-  const autoTranslateMissing = async () => {
-    const items: Array<{ text: string; format?: "text" | "html"; field: string }> = [];
-    if (title.trim() && !titleUz.trim()) items.push({ text: title, field: "title" });
-    if (excerpt.trim() && !excerptUz.trim()) items.push({ text: excerpt, field: "excerpt" });
-    if (content.trim() && !contentUz.trim())
-      items.push({ text: content, field: "content", format: "html" });
-
-    if (items.length === 0) return { title_uz: titleUz, excerpt_uz: excerptUz, content_uz: contentUz };
-
+  const translateAllRuToEn = async () => {
+    if (!title.trim() && !excerpt.trim() && !content.trim()) {
+      toast({
+        title: t("translate.error"),
+        description: t("admin.fill_required"),
+        variant: "destructive",
+      });
+      return;
+    }
+    setTranslatingAll(true);
     try {
-      const { results } = await api.translateBatch({ items, source: "ru", target: "uz" });
-      const out = { title_uz: titleUz, excerpt_uz: excerptUz, content_uz: contentUz };
+      const items: Array<{ text: string; format?: "text" | "html"; field: string }> = [];
+      if (title.trim()) items.push({ text: title, field: "title", format: "text" });
+      if (excerpt.trim()) items.push({ text: excerpt, field: "excerpt", format: "text" });
+      if (content.trim()) items.push({ text: content, field: "content", format: "html" });
+
+      const { results } = await api.translateBatch({
+        items,
+        source: "ru",
+        target: "en",
+      });
+
       for (const r of results) {
         if (r.error || !r.translated) continue;
-        if (r.field === "title") out.title_uz = r.translated;
-        if (r.field === "excerpt") out.excerpt_uz = r.translated;
-        if (r.field === "content") out.content_uz = r.translated;
+        if (r.field === "title") setTitleEn(r.translated);
+        if (r.field === "excerpt") setExcerptEn(r.translated);
+        if (r.field === "content") setContentEn(r.translated);
       }
-      setTitleUz(out.title_uz);
-      setExcerptUz(out.excerpt_uz);
-      setContentUz(out.content_uz);
-      return out;
-    } catch {
-      return { title_uz: titleUz, excerpt_uz: excerptUz, content_uz: contentUz };
+      toast({
+        title: t("translate.success"),
+        description: t("translate.success_desc"),
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t("translate.error_desc");
+      toast({ title: t("translate.error"), description: msg, variant: "destructive" });
+    } finally {
+      setTranslatingAll(false);
     }
+  };
+
+  const autoTranslateMissing = async () => {
+    type UzOut = { title_uz: string; excerpt_uz: string; content_uz: string };
+    type EnOut = { title_en: string; excerpt_en: string; content_en: string };
+
+    const uzItems: Array<{ text: string; format?: "text" | "html"; field: string }> = [];
+    if (title.trim() && !titleUz.trim()) uzItems.push({ text: title, field: "title" });
+    if (excerpt.trim() && !excerptUz.trim()) uzItems.push({ text: excerpt, field: "excerpt" });
+    if (content.trim() && !contentUz.trim())
+      uzItems.push({ text: content, field: "content", format: "html" });
+
+    let uz: UzOut = { title_uz: titleUz, excerpt_uz: excerptUz, content_uz: contentUz };
+    if (uzItems.length > 0) {
+      try {
+        const { results } = await api.translateBatch({ items: uzItems, source: "ru", target: "uz" });
+        for (const r of results) {
+          if (r.error || !r.translated) continue;
+          if (r.field === "title") uz.title_uz = r.translated;
+          if (r.field === "excerpt") uz.excerpt_uz = r.translated;
+          if (r.field === "content") uz.content_uz = r.translated;
+        }
+        setTitleUz(uz.title_uz);
+        setExcerptUz(uz.excerpt_uz);
+        setContentUz(uz.content_uz);
+      } catch {
+        uz = { title_uz: titleUz, excerpt_uz: excerptUz, content_uz: contentUz };
+      }
+    }
+
+    const enItems: Array<{ text: string; format?: "text" | "html"; field: string }> = [];
+    if (title.trim() && !titleEn.trim()) enItems.push({ text: title, field: "title" });
+    if (excerpt.trim() && !excerptEn.trim()) enItems.push({ text: excerpt, field: "excerpt" });
+    if (content.trim() && !contentEn.trim())
+      enItems.push({ text: content, field: "content", format: "html" });
+
+    let en: EnOut = { title_en: titleEn, excerpt_en: excerptEn, content_en: contentEn };
+    if (enItems.length > 0) {
+      try {
+        const { results } = await api.translateBatch({ items: enItems, source: "ru", target: "en" });
+        for (const r of results) {
+          if (r.error || !r.translated) continue;
+          if (r.field === "title") en.title_en = r.translated;
+          if (r.field === "excerpt") en.excerpt_en = r.translated;
+          if (r.field === "content") en.content_en = r.translated;
+        }
+        setTitleEn(en.title_en);
+        setExcerptEn(en.excerpt_en);
+        setContentEn(en.content_en);
+      } catch {
+        en = { title_en: titleEn, excerpt_en: excerptEn, content_en: contentEn };
+      }
+    }
+
+    return { ...uz, ...en };
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -372,22 +451,31 @@ export default function PostForm() {
     let finalTitleUz = titleUz;
     let finalExcerptUz = excerptUz;
     let finalContentUz = contentUz;
+    let finalTitleEn = titleEn;
+    let finalExcerptEn = excerptEn;
+    let finalContentEn = contentEn;
 
     if (autoTranslate && published) {
       const out = await autoTranslateMissing();
       finalTitleUz = out.title_uz;
       finalExcerptUz = out.excerpt_uz;
       finalContentUz = out.content_uz;
+      finalTitleEn = out.title_en;
+      finalExcerptEn = out.excerpt_en;
+      finalContentEn = out.content_en;
     }
 
     const body = {
       title,
       title_uz: finalTitleUz || null,
+      title_en: finalTitleEn || null,
       slug,
       excerpt: excerpt || null,
       excerpt_uz: finalExcerptUz || null,
+      excerpt_en: finalExcerptEn || null,
       content,
       content_uz: finalContentUz || null,
+      content_en: finalContentEn || null,
       author_name: authorName,
       published,
       category: categoryId || null,
@@ -423,7 +511,7 @@ export default function PostForm() {
         <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
           {isEdit ? t("admin.edit_article") : t("admin.new_article")}
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="outline"
@@ -446,6 +534,21 @@ export default function PostForm() {
               <Sparkles className="h-4 w-4 mr-2" />
             )}
             {translatingAll ? t("translate.translating") : t("translate.all_fields")}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            className="flex-1 sm:flex-none"
+            onClick={translateAllRuToEn}
+            disabled={translatingAll}
+          >
+            {translatingAll ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4 mr-2" />
+            )}
+            {translatingAll ? t("translate.translating") : t("translate.all_to_en")}
           </Button>
         </div>
       </div>
@@ -609,6 +712,120 @@ export default function PostForm() {
                         />
                       </div>
                     </div>
+                </div>
+
+                <Separator className="my-2" />
+                <p className="text-sm font-medium text-muted-foreground">{t("admin.section_en")}</p>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5 gap-2 flex-wrap">
+                      <Label htmlFor="title-en">{t("admin.title_en_label")}</Label>
+                      <div className="flex items-center gap-1">
+                        <TranslateButton
+                          value={title}
+                          direction="ru-to-en"
+                          onTranslated={(v) => setTitleEn(v)}
+                          iconOnly
+                          disabled={!title.trim()}
+                        />
+                        <TranslateButton
+                          value={titleUz}
+                          direction="uz-to-en"
+                          onTranslated={(v) => setTitleEn(v)}
+                          iconOnly
+                          disabled={!titleUz.trim()}
+                        />
+                        <TranslateButton
+                          value={titleEn}
+                          direction="en-to-ru"
+                          onTranslated={(v) => setTitle(v)}
+                          iconOnly
+                          disabled={!titleEn.trim()}
+                        />
+                      </div>
+                    </div>
+                    <Input
+                      id="title-en"
+                      value={titleEn}
+                      onChange={(e) => setTitleEn(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5 gap-2 flex-wrap">
+                      <Label htmlFor="excerpt-en">{t("admin.excerpt_en_label")}</Label>
+                      <div className="flex items-center gap-1">
+                        <TranslateButton
+                          value={excerpt}
+                          direction="ru-to-en"
+                          onTranslated={(v) => setExcerptEn(v)}
+                          iconOnly
+                          disabled={!excerpt.trim()}
+                        />
+                        <TranslateButton
+                          value={excerptUz}
+                          direction="uz-to-en"
+                          onTranslated={(v) => setExcerptEn(v)}
+                          iconOnly
+                          disabled={!excerptUz.trim()}
+                        />
+                        <TranslateButton
+                          value={excerptEn}
+                          direction="en-to-ru"
+                          onTranslated={(v) => setExcerpt(v)}
+                          iconOnly
+                          disabled={!excerptEn.trim()}
+                        />
+                      </div>
+                    </div>
+                    <Textarea
+                      id="excerpt-en"
+                      value={excerptEn}
+                      onChange={(e) => setExcerptEn(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5 gap-2 flex-wrap">
+                      <Label htmlFor="content-en">{t("admin.content_en_label")}</Label>
+                      <div className="flex items-center gap-1">
+                        <TranslateButton
+                          value={content}
+                          direction="ru-to-en"
+                          format="html"
+                          onTranslated={(v) => setContentEn(v)}
+                          iconOnly
+                          disabled={!content.replace(/<[^>]*>/g, "").trim()}
+                        />
+                        <TranslateButton
+                          value={contentUz}
+                          direction="uz-to-en"
+                          format="html"
+                          onTranslated={(v) => setContentEn(v)}
+                          iconOnly
+                          disabled={!contentUz.replace(/<[^>]*>/g, "").trim()}
+                        />
+                        <TranslateButton
+                          value={contentEn}
+                          direction="en-to-ru"
+                          format="html"
+                          onTranslated={(v) => setContent(v)}
+                          iconOnly
+                          disabled={!contentEn.replace(/<[^>]*>/g, "").trim()}
+                        />
+                      </div>
+                    </div>
+                    <div className="min-h-[200px] md:min-h-[280px] bg-white rounded-md border">
+                      <ReactQuill
+                        theme="snow"
+                        value={contentEn}
+                        onChange={(value) => setContentEn(value)}
+                        modules={quillModules}
+                        formats={quillFormats}
+                        placeholder={t("admin.content_placeholder_en")}
+                        className="quill-editor"
+                      />
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

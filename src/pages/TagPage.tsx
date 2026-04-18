@@ -12,6 +12,7 @@ interface Tag {
   _id: string;
   name: string;
   name_uz?: string;
+  name_en?: string;
   slug: string;
 }
 
@@ -35,6 +36,7 @@ interface Post {
 const TagPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { t } = useI18n();
+  const siteName = t("site.name");
   const localized = useLocalized();
   const [posts, setPosts] = useState<Post[]>([]);
   const [tag, setTag] = useState<Tag | null>(null);
@@ -98,10 +100,38 @@ const TagPage = () => {
   return (
     <Layout>
       <Helmet>
-        <title>{tag ? `#${localized(tag, "name") || tag.name} — ЮристБлог` : `Тег — ЮристБлог`}</title>
-        <meta name="description" content={`Статьи с тегом ${localized(tag, "name") || tag?.name || ""}`} />
-        <meta property="og:title" content={`#${localized(tag, "name") || tag?.name || "Тег"}`} />
-        <meta property="og:description" content={`Статьи с тегом ${localized(tag, "name") || tag?.name || ""}`} />
+        <title>
+          {tag
+            ? t("seo.tag_title", {
+                name: localized(tag, "name") || tag.name,
+                site: siteName,
+              })
+            : t("seo.tag_fallback_title", { label: t("seo.tag"), site: siteName })}
+        </title>
+        <meta
+          name="description"
+          content={
+            tag
+              ? t("seo.tag_meta", { name: localized(tag, "name") || tag.name })
+              : t("site.subtitle")
+          }
+        />
+        <meta
+          property="og:title"
+          content={
+            tag
+              ? t("seo.tag_og_title", { name: localized(tag, "name") || tag.name })
+              : t("seo.tag")
+          }
+        />
+        <meta
+          property="og:description"
+          content={
+            tag
+              ? t("seo.tag_meta", { name: localized(tag, "name") || tag.name })
+              : t("site.subtitle")
+          }
+        />
         <meta property="og:type" content="website" />
         <link rel="canonical" href={`${typeof window !== "undefined" ? window.location.origin : ""}/tag/${slug}`} />
       </Helmet>

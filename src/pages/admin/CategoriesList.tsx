@@ -39,9 +39,11 @@ interface Category {
   id: string;
   name: string;
   name_uz?: string;
+  name_en?: string;
   slug: string;
   description: string | null;
   description_uz?: string;
+  description_en?: string;
   icon: string | null;
 }
 
@@ -55,6 +57,8 @@ export default function CategoriesList() {
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [descriptionUz, setDescriptionUz] = useState("");
+  const [nameEn, setNameEn] = useState("");
+  const [descriptionEn, setDescriptionEn] = useState("");
   const [icon, setIcon] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
@@ -73,18 +77,22 @@ export default function CategoriesList() {
             id?: string;
             name: string;
             name_uz?: string;
+            name_en?: string;
             slug: string;
             description?: string | null;
             description_uz?: string;
+            description_en?: string;
             icon?: string | null;
           }>
         ).map((cat) => ({
           id: cat._id || cat.id || "",
           name: cat.name,
           name_uz: cat.name_uz,
+          name_en: cat.name_en,
           slug: cat.slug,
           description: cat.description ?? null,
           description_uz: cat.description_uz,
+          description_en: cat.description_en,
           icon: cat.icon ?? null,
         }));
         setCategories(mapped);
@@ -111,6 +119,8 @@ export default function CategoriesList() {
     setSlug("");
     setDescription("");
     setDescriptionUz("");
+    setNameEn("");
+    setDescriptionEn("");
     setIcon("");
     setModalOpen(true);
   };
@@ -119,9 +129,11 @@ export default function CategoriesList() {
     setEditingId(cat.id);
     setName(cat.name);
     setNameUz(cat.name_uz || "");
+    setNameEn(cat.name_en || "");
     setSlug(cat.slug);
     setDescription(cat.description || "");
     setDescriptionUz(cat.description_uz || "");
+    setDescriptionEn(cat.description_en || "");
     setIcon(cat.icon || "");
     setModalOpen(true);
   };
@@ -140,9 +152,11 @@ export default function CategoriesList() {
     const body = {
       name,
       name_uz: nameUz || null,
+      name_en: nameEn || null,
       slug,
       description: description || null,
       description_uz: descriptionUz || null,
+      description_en: descriptionEn || null,
       icon: icon || null,
     };
     try {
@@ -344,6 +358,39 @@ export default function CategoriesList() {
               />
             </div>
             <div>
+              <div className="flex items-center justify-between mb-1.5 gap-1 flex-wrap">
+                <Label htmlFor="cat-name-en">{t("admin.cat_name_en_label")}</Label>
+                <div className="flex items-center gap-1">
+                  <TranslateButton
+                    value={name}
+                    direction="ru-to-en"
+                    onTranslated={setNameEn}
+                    iconOnly
+                    disabled={!name.trim()}
+                  />
+                  <TranslateButton
+                    value={nameUz}
+                    direction="uz-to-en"
+                    onTranslated={setNameEn}
+                    iconOnly
+                    disabled={!nameUz.trim()}
+                  />
+                  <TranslateButton
+                    value={nameEn}
+                    direction="en-to-ru"
+                    onTranslated={setName}
+                    iconOnly
+                    disabled={!nameEn.trim()}
+                  />
+                </div>
+              </div>
+              <Input
+                id="cat-name-en"
+                value={nameEn}
+                onChange={(e) => setNameEn(e.target.value)}
+              />
+            </div>
+            <div>
               <Label htmlFor="cat-slug">{t("admin.cat_slug")} *</Label>
               <Input
                 id="cat-slug"
@@ -378,6 +425,40 @@ export default function CategoriesList() {
                 id="cat-desc-uz"
                 value={descriptionUz}
                 onChange={(e) => setDescriptionUz(e.target.value)}
+                rows={2}
+              />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5 gap-1 flex-wrap">
+                <Label htmlFor="cat-desc-en">{t("admin.cat_desc_en_label")}</Label>
+                <div className="flex items-center gap-1">
+                  <TranslateButton
+                    value={description}
+                    direction="ru-to-en"
+                    onTranslated={setDescriptionEn}
+                    iconOnly
+                    disabled={!description.trim()}
+                  />
+                  <TranslateButton
+                    value={descriptionUz}
+                    direction="uz-to-en"
+                    onTranslated={setDescriptionEn}
+                    iconOnly
+                    disabled={!descriptionUz.trim()}
+                  />
+                  <TranslateButton
+                    value={descriptionEn}
+                    direction="en-to-ru"
+                    onTranslated={setDescription}
+                    iconOnly
+                    disabled={!descriptionEn.trim()}
+                  />
+                </div>
+              </div>
+              <Textarea
+                id="cat-desc-en"
+                value={descriptionEn}
+                onChange={(e) => setDescriptionEn(e.target.value)}
                 rows={2}
               />
             </div>

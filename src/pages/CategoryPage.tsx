@@ -12,9 +12,11 @@ interface Category {
   _id: string;
   name: string;
   name_uz?: string;
+  name_en?: string;
   slug: string;
   description: string | null;
   description_uz?: string;
+  description_en?: string;
 }
 
 interface Post {
@@ -37,6 +39,7 @@ interface Post {
 const CategoryPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { t } = useI18n();
+  const siteName = t("site.name");
   const localized = useLocalized();
   const [posts, setPosts] = useState<Post[]>([]);
   const [category, setCategory] = useState<Category | null>(null);
@@ -97,10 +100,39 @@ const CategoryPage = () => {
   return (
     <Layout>
       <Helmet>
-        <title>{category ? `${localized(category, "name") || category.name} — ЮристБлог` : `Категория — ЮристБлог`}</title>
-        <meta name="description" content={localized(category, "description") || category?.description || `Статьи категории ${category?.name || ""}`} />
-        <meta property="og:title" content={localized(category, "name") || category?.name || "Категория"} />
-        <meta property="og:description" content={localized(category, "description") || category?.description || ""} />
+        <title>
+          {category
+            ? t("seo.category_title", {
+                name: localized(category, "name") || category.name,
+                site: siteName,
+              })
+            : t("seo.category_fallback_title", {
+                label: t("seo.category"),
+                site: siteName,
+              })}
+        </title>
+        <meta
+          name="description"
+          content={
+            localized(category, "description") ||
+            category?.description ||
+            (category
+              ? t("seo.category_meta_name", {
+                  name: localized(category, "name") || category.name,
+                })
+              : t("site.subtitle"))
+          }
+        />
+        <meta
+          property="og:title"
+          content={localized(category, "name") || category?.name || t("seo.category")}
+        />
+        <meta
+          property="og:description"
+          content={
+            localized(category, "description") || category?.description || ""
+          }
+        />
         <meta property="og:type" content="website" />
         <link rel="canonical" href={`${typeof window !== "undefined" ? window.location.origin : ""}/category/${slug}`} />
       </Helmet>

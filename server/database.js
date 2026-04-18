@@ -35,9 +35,11 @@ function rowCategory(row) {
     id,
     name: row.name,
     name_uz: row.name_uz,
+    name_en: row.name_en,
     slug: row.slug,
     description: row.description,
     description_uz: row.description_uz,
+    description_en: row.description_en,
     icon: row.icon,
     created_at: row.created_at,
   };
@@ -51,6 +53,7 @@ function rowTag(row) {
     id,
     name: row.name,
     name_uz: row.name_uz,
+    name_en: row.name_en,
     slug: row.slug,
     created_at: row.created_at,
   };
@@ -101,11 +104,14 @@ function hydratePost(postRow) {
     id,
     title: postRow.title,
     title_uz: postRow.title_uz,
+    title_en: postRow.title_en,
     slug: postRow.slug,
     excerpt: postRow.excerpt,
     excerpt_uz: postRow.excerpt_uz,
+    excerpt_en: postRow.excerpt_en,
     content: postRow.content,
     content_uz: postRow.content_uz,
+    content_en: postRow.content_en,
     featured_image: postRow.featured_image,
     created_at: postRow.created_at,
     updated_at: postRow.updated_at,
@@ -125,6 +131,21 @@ export function isUniqueConstraintError(e) {
     e?.code === "SQLITE_CONSTRAINT_PRIMARYKEY" ||
     (typeof e?.message === "string" && e.message.includes("UNIQUE"))
   );
+}
+
+/** Добавляет колонки EN для существующих БД (SQLite не меняет CREATE TABLE задним числом). */
+function migrateMultilingualColumns() {
+  const addIfMissing = (table, column) => {
+    const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+    if (cols.some((c) => c.name === column)) return;
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} TEXT`);
+  };
+  addIfMissing("categories", "name_en");
+  addIfMissing("categories", "description_en");
+  addIfMissing("tags", "name_en");
+  addIfMissing("posts", "title_en");
+  addIfMissing("posts", "excerpt_en");
+  addIfMissing("posts", "content_en");
 }
 
 export function initDatabase() {
@@ -213,6 +234,8 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_posts_created ON posts(created_at);
   `);
 
+  migrateMultilingualColumns();
+
   console.log(`SQLite connected: ${dbPath}`);
 }
 
@@ -270,15 +293,17 @@ export function createCategory(body) {
   const t = nowIso();
   const info = db
     .prepare(
-      `INSERT INTO categories (name, name_uz, slug, description, description_uz, icon, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO categories (name, name_uz, name_en, slug, description, description_uz, description_en, icon, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       body.name,
       body.name_uz ?? null,
+      body.name_en ?? null,
       String(body.slug).toLowerCase(),
       body.description ?? null,
       body.description_uz ?? null,
+      body.description_en ?? null,
       body.icon ?? null,
       t,
     );
@@ -294,17 +319,21 @@ export function updateCategory(id, body) {
     `UPDATE categories SET
       name = COALESCE(?, name),
       name_uz = COALESCE(?, name_uz),
+      name_en = COALESCE(?, name_en),
       slug = COALESCE(?, slug),
       description = COALESCE(?, description),
       description_uz = COALESCE(?, description_uz),
+      description_en = COALESCE(?, description_en),
       icon = COALESCE(?, icon)
      WHERE id = ?`,
   ).run(
     body.name ?? cur.name,
     body.name_uz !== undefined ? body.name_uz : cur.name_uz,
+    body.name_en !== undefined ? body.name_en : cur.name_en,
     body.slug != null ? String(body.slug).toLowerCase() : cur.slug,
     body.description !== undefined ? body.description : cur.description,
     body.description_uz !== undefined ? body.description_uz : cur.description_uz,
+    body.description_en !== undefined ? body.description_en : cur.description_en,
     body.icon !== undefined ? body.icon : cur.icon,
     n,
   );
@@ -333,9 +362,9 @@ export function createTag(body) {
   const t = nowIso();
   const info = db
     .prepare(
-      "INSERT INTO tags (name, name_uz, slug, created_at) VALUES (?, ?, ?, ?)",
+      "INSERT INTO tags (name, name_uz, name_en, slug, created_at) VALUES (?, ?, ?, ?, ?)",
     )
-    .run(body.name, body.name_uz ?? null, String(body.slug).toLowerCase(), t);
+    .run(body.name, body.name_uz ?? null, body.name_en ?? null, String(body.slug).toLowerCase(), t);
   return findTagById(info.lastInsertRowid);
 }
 
@@ -348,11 +377,13 @@ export function updateTag(id, body) {
     `UPDATE tags SET
       name = COALESCE(?, name),
       name_uz = COALESCE(?, name_uz),
+      name_en = COALESCE(?, name_en),
       slug = COALESCE(?, slug)
      WHERE id = ?`,
   ).run(
     body.name ?? cur.name,
     body.name_uz !== undefined ? body.name_uz : cur.name_uz,
+    body.name_en !== undefined ? body.name_en : cur.name_en,
     body.slug != null ? String(body.slug).toLowerCase() : cur.slug,
     n,
   );
@@ -434,12 +465,15 @@ export function findPosts(query) {
     clauses.push(`(
       instr(lower(coalesce(p.title,'')), ?) > 0 OR
       instr(lower(coalesce(p.title_uz,'')), ?) > 0 OR
+      instr(lower(coalesce(p.title_en,'')), ?) > 0 OR
       instr(lower(coalesce(p.content,'')), ?) > 0 OR
       instr(lower(coalesce(p.content_uz,'')), ?) > 0 OR
+      instr(lower(coalesce(p.content_en,'')), ?) > 0 OR
       instr(lower(coalesce(p.excerpt,'')), ?) > 0 OR
-      instr(lower(coalesce(p.excerpt_uz,'')), ?) > 0
+      instr(lower(coalesce(p.excerpt_uz,'')), ?) > 0 OR
+      instr(lower(coalesce(p.excerpt_en,'')), ?) > 0
     )`);
-    params.push(s, s, s, s, s, s);
+    params.push(s, s, s, s, s, s, s, s, s);
   }
 
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
@@ -487,19 +521,22 @@ export function createPost(body) {
   const info = db
     .prepare(
       `INSERT INTO posts (
-        title, title_uz, slug, excerpt, excerpt_uz, content, content_uz,
+        title, title_uz, title_en, slug, excerpt, excerpt_uz, excerpt_en, content, content_uz, content_en,
         featured_image, created_at, updated_at, author_name, published,
         legislation_links_json, category_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       body.title,
       body.title_uz ?? null,
+      body.title_en ?? null,
       String(body.slug).toLowerCase(),
       body.excerpt ?? null,
       body.excerpt_uz ?? null,
+      body.excerpt_en ?? null,
       body.content,
       body.content_uz ?? null,
+      body.content_en ?? null,
       body.featured_image ?? null,
       t,
       t,
@@ -537,11 +574,14 @@ export function updatePost(id, body) {
     `UPDATE posts SET
       title = ?,
       title_uz = ?,
+      title_en = ?,
       slug = ?,
       excerpt = ?,
       excerpt_uz = ?,
+      excerpt_en = ?,
       content = ?,
       content_uz = ?,
+      content_en = ?,
       featured_image = ?,
       updated_at = ?,
       author_name = ?,
@@ -552,11 +592,14 @@ export function updatePost(id, body) {
   ).run(
     body.title !== undefined ? body.title : cur.title,
     body.title_uz !== undefined ? body.title_uz : cur.title_uz,
+    body.title_en !== undefined ? body.title_en : cur.title_en,
     body.slug !== undefined ? String(body.slug).toLowerCase() : cur.slug,
     body.excerpt !== undefined ? body.excerpt : cur.excerpt,
     body.excerpt_uz !== undefined ? body.excerpt_uz : cur.excerpt_uz,
+    body.excerpt_en !== undefined ? body.excerpt_en : cur.excerpt_en,
     body.content !== undefined ? body.content : cur.content,
     body.content_uz !== undefined ? body.content_uz : cur.content_uz,
+    body.content_en !== undefined ? body.content_en : cur.content_en,
     body.featured_image !== undefined ? body.featured_image : cur.featured_image,
     t,
     body.author_name !== undefined ? body.author_name : cur.author_name,
@@ -590,44 +633,101 @@ export function deletePost(id) {
 }
 
 const defaultCategories = [
-  { name: "Корпоративное право", name_uz: "Korporativ huquq", slug: "corporate-law", description: "Правовое регулирование деятельности юридических лиц", description_uz: "Yuridik shaxslar faoliyatini huquqiy tartibga solish", icon: "Building2" },
-  { name: "Корпоративное управление", name_uz: "Korporativ boshqaruv", slug: "corporate-governance", description: "Структура и процессы управления компаниями", description_uz: "Kompaniyalarni boshqarish tuzilmalari va jarayonlari", icon: "Users" },
-  { name: "Конкурентное право", name_uz: "Raqobat huquqi", slug: "competition-law", description: "Антимонопольное регулирование и защита конкуренции", description_uz: "Antimonopiya tartibga solish va raqobatni himoya qilish", icon: "Scale" },
-  { name: "Налоги", name_uz: "Soliqlar", slug: "taxes", description: "Налоговое законодательство и практика", description_uz: "Soliq qonunchiligi va amaliyoti", icon: "Calculator" },
-  { name: "Строительство", name_uz: "Qurilish", slug: "construction", description: "Правовое регулирование строительной деятельности", description_uz: "Qurilish faoliyatini huquqiy tartibga solish", icon: "HardHat" },
+  {
+    name: "Корпоративное право",
+    name_uz: "Korporativ huquq",
+    name_en: "Corporate law",
+    slug: "corporate-law",
+    description: "Правовое регулирование деятельности юридических лиц",
+    description_uz: "Yuridik shaxslar faoliyatini huquqiy tartibga solish",
+    description_en: "Legal framework for business entities",
+    icon: "Building2",
+  },
+  {
+    name: "Корпоративное управление",
+    name_uz: "Korporativ boshqaruv",
+    name_en: "Corporate governance",
+    slug: "corporate-governance",
+    description: "Структура и процессы управления компаниями",
+    description_uz: "Kompaniyalarni boshqarish tuzilmalari va jarayonlari",
+    description_en: "Structures and processes of company management",
+    icon: "Users",
+  },
+  {
+    name: "Конкурентное право",
+    name_uz: "Raqobat huquqi",
+    name_en: "Competition law",
+    slug: "competition-law",
+    description: "Антимонопольное регулирование и защита конкуренции",
+    description_uz: "Antimonopiya tartibga solish va raqobatni himoya qilish",
+    description_en: "Antitrust regulation and competition protection",
+    icon: "Scale",
+  },
+  {
+    name: "Налоги",
+    name_uz: "Soliqlar",
+    name_en: "Tax",
+    slug: "taxes",
+    description: "Налоговое законодательство и практика",
+    description_uz: "Soliq qonunchiligi va amaliyoti",
+    description_en: "Tax legislation and practice",
+    icon: "Calculator",
+  },
+  {
+    name: "Строительство",
+    name_uz: "Qurilish",
+    name_en: "Construction",
+    slug: "construction",
+    description: "Правовое регулирование строительной деятельности",
+    description_uz: "Qurilish faoliyatini huquqiy tartibga solish",
+    description_en: "Legal regulation of construction activity",
+    icon: "HardHat",
+  },
 ];
 
 const defaultTags = [
-  { name: "ГК РУз", name_uz: "FU O'zR", slug: "gk-ruz" },
-  { name: "НК РУз", name_uz: "SK O'zR", slug: "nk-ruz" },
-  { name: "Антимонополия", name_uz: "Antimonopoliya", slug: "antimonopoliya" },
-  { name: "ООО", name_uz: "MChJ", slug: "ooo" },
-  { name: "АО", name_uz: "AJ", slug: "ao" },
+  { name: "ГК РУз", name_uz: "FU O'zR", name_en: "Civil Code (Uz)", slug: "gk-ruz" },
+  { name: "НК РУз", name_uz: "SK O'zR", name_en: "Tax Code (Uz)", slug: "nk-ruz" },
+  { name: "Антимонополия", name_uz: "Antimonopoliya", name_en: "Antimonopoly", slug: "antimonopoliya" },
+  { name: "ООО", name_uz: "MChJ", name_en: "LLC", slug: "ooo" },
+  { name: "АО", name_uz: "AJ", name_en: "JSC", slug: "ao" },
 ];
 
 export async function seedDatabase() {
   const t = nowIso();
   const insCat = db.prepare(
-    `INSERT OR IGNORE INTO categories (name, name_uz, slug, description, description_uz, icon, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR IGNORE INTO categories (name, name_uz, name_en, slug, description, description_uz, description_en, icon, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
   for (const c of defaultCategories) {
-    insCat.run(c.name, c.name_uz, c.slug, c.description, c.description_uz, c.icon, t);
+    insCat.run(
+      c.name,
+      c.name_uz,
+      c.name_en ?? null,
+      c.slug,
+      c.description,
+      c.description_uz,
+      c.description_en ?? null,
+      c.icon,
+      t,
+    );
   }
-  const updCat = db.prepare("UPDATE categories SET name_uz = ?, description_uz = ? WHERE slug = ?");
+  const updCat = db.prepare(
+    "UPDATE categories SET name_uz = ?, description_uz = ?, name_en = ?, description_en = ? WHERE slug = ?",
+  );
   for (const c of defaultCategories) {
-    updCat.run(c.name_uz, c.description_uz, c.slug);
+    updCat.run(c.name_uz, c.description_uz, c.name_en ?? null, c.description_en ?? null, c.slug);
   }
 
   const insTag = db.prepare(
-    "INSERT OR IGNORE INTO tags (name, name_uz, slug, created_at) VALUES (?, ?, ?, ?)",
+    "INSERT OR IGNORE INTO tags (name, name_uz, name_en, slug, created_at) VALUES (?, ?, ?, ?, ?)",
   );
   for (const tg of defaultTags) {
-    insTag.run(tg.name, tg.name_uz, tg.slug, t);
+    insTag.run(tg.name, tg.name_uz, tg.name_en ?? null, tg.slug, t);
   }
-  const updTag = db.prepare("UPDATE tags SET name_uz = ? WHERE slug = ?");
+  const updTag = db.prepare("UPDATE tags SET name_uz = ?, name_en = ? WHERE slug = ?");
   for (const tg of defaultTags) {
-    updTag.run(tg.name_uz, tg.slug);
+    updTag.run(tg.name_uz, tg.name_en ?? null, tg.slug);
   }
 
   const postCount = db.prepare("SELECT COUNT(*) AS c FROM posts").get().c;
@@ -640,11 +740,14 @@ export async function seedDatabase() {
       {
         title: "Основы корпоративного права Узбекистана",
         title_uz: "O'zbekiston korporativ huquqi asoslari",
+        title_en: "Fundamentals of corporate law in Uzbekistan",
         slug: "osnovy-korporativnogo-prava",
         excerpt: "Обзор ключевых норм корпоративного законодательства Республики Узбекистан",
         excerpt_uz: "O'zbekiston Respublikasi korporativ qonunchiligining asosiy normalariga sharh",
+        excerpt_en: "Overview of key norms of corporate legislation in Uzbekistan",
         content: "<p>Корпоративное право Узбекистана регулирует создание, деятельность и ликвидацию юридических лиц.</p><h2>Основные источники</h2><p>Гражданский кодекс Республики Узбекистан является основным источником корпоративного права.</p>",
         content_uz: "<p>O'zbekistonning korporativ huquqi yuridik shaxslarning tashkil etilishi, faoliyati va tugatilishini tartibga soladi.</p><h2>Asosiy manbalar</h2><p>O'zbekiston Respublikasi Fuqarolik kodeksi korporativ huquqning asosiy manbai hisoblanadi.</p>",
+        content_en: "<p>Corporate law in Uzbekistan governs the formation, operation, and liquidation of legal entities.</p><h2>Main sources</h2><p>The Civil Code of Uzbekistan is the primary source of corporate law.</p>",
         author_name: "Автор",
         published: true,
         category: catId("corporate-law"),
@@ -656,11 +759,14 @@ export async function seedDatabase() {
       {
         title: "Налоговые льготы для IT-компаний",
         title_uz: "IT-kompaniyalar uchun soliq imtiyozlari",
+        title_en: "Tax incentives for IT companies",
         slug: "nalogovye-lgoty-it",
         excerpt: "Анализ налоговых преференций для компаний в сфере информационных технологий",
         excerpt_uz: "Axborot texnologiyalari sohasidagi kompaniyalar uchun soliq imtiyozlari tahlili",
+        excerpt_en: "Analysis of tax preferences for information technology companies",
         content: "<p>IT-компании в Узбекистане могут воспользоваться рядом налоговых льгот.</p><h2>Основные льготы</h2><p>Резиденты IT Park освобождаются от уплаты налога на прибыль, НДС, налога на имущество и земельного налога.</p>",
         content_uz: "<p>O'zbekistondagi IT-kompaniyalar bir qator soliq imtiyozlaridan foydalanishlari mumkin.</p><h2>Asosiy imtiyozlar</h2><p>IT Park rezidentlari foyda solig'i, QQS, mulk solig'i va yer solig'idan ozod qilinadi.</p>",
+        content_en: "<p>IT companies in Uzbekistan can benefit from several tax incentives.</p><h2>Main benefits</h2><p>IT Park residents are exempt from profit tax, VAT, property tax, and land tax.</p>",
         author_name: "Автор",
         published: true,
         category: catId("taxes"),
@@ -672,11 +778,14 @@ export async function seedDatabase() {
       {
         title: "Антимонопольное регулирование: новые правила",
         title_uz: "Antimonopoliya tartibga solish: yangi qoidalar",
+        title_en: "Antimonopoly regulation: new rules",
         slug: "antimonopolnoe-regulirovanie",
         excerpt: "Обзор последних изменений в антимонопольном законодательстве",
         excerpt_uz: "Antimonopoliya qonunchiligiga kiritilgan so'nggi o'zgarishlarga sharh",
+        excerpt_en: "Overview of recent changes in antimonopoly legislation",
         content: "<p>Антимонопольное законодательство Узбекистана претерпело значительные изменения.</p><h2>Ключевые изменения</h2><p>Новые правила ужесточают ответственность за злоупотребление доминирующим положением.</p>",
         content_uz: "<p>O'zbekiston antimonopoliya qonunchiligi jiddiy o'zgarishlarga uchradi.</p><h2>Asosiy o'zgarishlar</h2><p>Yangi qoidalar bozordagi ustun mavqeni suiiste'mol qilish uchun javobgarlikni kuchaytiradi.</p>",
+        content_en: "<p>Antimonopoly law in Uzbekistan has undergone significant changes.</p><h2>Key changes</h2><p>The new rules tighten liability for abuse of a dominant market position.</p>",
         author_name: "Автор",
         published: true,
         category: catId("competition-law"),

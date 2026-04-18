@@ -7,9 +7,11 @@ interface Category {
   id?: string;
   name: string;
   name_uz?: string;
+  name_en?: string;
   slug: string;
   description?: string | null;
   description_uz?: string;
+  description_en?: string;
   icon?: string | null;
 }
 
@@ -18,6 +20,7 @@ interface Tag {
   id?: string;
   name: string;
   name_uz?: string;
+  name_en?: string;
   slug: string;
 }
 
@@ -26,18 +29,28 @@ interface Post {
   id?: string;
   title: string;
   title_uz?: string;
+  title_en?: string;
   slug: string;
   excerpt: string | null;
   excerpt_uz?: string;
+  excerpt_en?: string;
   content: string;
   content_uz?: string;
+  content_en?: string;
   featured_image: string | null;
   created_at: string;
   author_name: string;
   published: boolean;
   legislation_links: Array<{ title: string; url: string }>;
-  category: { _id?: string; name: string; name_uz?: string; slug: string; icon?: string | null } | null;
-  tags: Array<{ _id?: string; name: string; name_uz?: string; slug: string }>;
+  category: {
+    _id?: string;
+    name: string;
+    name_uz?: string;
+    name_en?: string;
+    slug: string;
+    icon?: string | null;
+  } | null;
+  tags: Array<{ _id?: string; name: string; name_uz?: string; name_en?: string; slug: string }>;
   post_images: Array<{ url: string; alt_text: string | null; sort_order: number }>;
   post_videos?: Array<{ url: string; alt_text: string | null }>;
 }
@@ -200,14 +213,23 @@ export const api = {
   },
 
   // Translation
-  translate: async (payload: { text: string; source?: "ru" | "uz"; target?: "ru" | "uz"; format?: "text" | "html" }) => {
+  translate: async (payload: {
+    text: string;
+    source?: "ru" | "uz" | "en";
+    target?: "ru" | "uz" | "en";
+    format?: "text" | "html";
+  }) => {
     return fetchAPI("/translate", {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     }) as Promise<{ translated: string }>;
   },
-  translateBatch: async (payload: { items: Array<{ text: string; format?: "text" | "html"; field?: string }>; source?: "ru" | "uz"; target?: "ru" | "uz" }) => {
+  translateBatch: async (payload: {
+    items: Array<{ text: string; format?: "text" | "html"; field?: string }>;
+    source?: "ru" | "uz" | "en";
+    target?: "ru" | "uz" | "en";
+  }) => {
     return fetchAPI("/translate/batch", {
       method: "POST",
       headers: getAuthHeaders(),

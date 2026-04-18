@@ -37,6 +37,7 @@ interface Tag {
   id: string;
   name: string;
   name_uz?: string;
+  name_en?: string;
   slug: string;
 }
 
@@ -47,6 +48,7 @@ export default function TagsList() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [nameUz, setNameUz] = useState("");
+  const [nameEn, setNameEn] = useState("");
   const [slug, setSlug] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -64,12 +66,14 @@ export default function TagsList() {
             id?: string;
             name: string;
             name_uz?: string;
+            name_en?: string;
             slug: string;
           }>
         ).map((tag) => ({
           id: tag._id || tag.id || "",
           name: tag.name,
           name_uz: tag.name_uz,
+          name_en: tag.name_en,
           slug: tag.slug,
         }));
         setTags(mapped);
@@ -93,6 +97,7 @@ export default function TagsList() {
     setEditingId(null);
     setName("");
     setNameUz("");
+    setNameEn("");
     setSlug("");
     setModalOpen(true);
   };
@@ -101,6 +106,7 @@ export default function TagsList() {
     setEditingId(tag.id);
     setName(tag.name);
     setNameUz(tag.name_uz || "");
+    setNameEn(tag.name_en || "");
     setSlug(tag.slug);
     setModalOpen(true);
   };
@@ -116,7 +122,7 @@ export default function TagsList() {
       return;
     }
     setSaving(true);
-    const body = { name, name_uz: nameUz || null, slug };
+    const body = { name, name_uz: nameUz || null, name_en: nameEn || null, slug };
     try {
       if (editingId) {
         await api.updateTag(editingId, body);
@@ -285,6 +291,39 @@ export default function TagsList() {
                 id="tag-name-uz"
                 value={nameUz}
                 onChange={(e) => setNameUz(e.target.value)}
+              />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5 gap-1 flex-wrap">
+                <Label htmlFor="tag-name-en">{t("admin.tag_name_en_label")}</Label>
+                <div className="flex items-center gap-1">
+                  <TranslateButton
+                    value={name}
+                    direction="ru-to-en"
+                    onTranslated={setNameEn}
+                    iconOnly
+                    disabled={!name.trim()}
+                  />
+                  <TranslateButton
+                    value={nameUz}
+                    direction="uz-to-en"
+                    onTranslated={setNameEn}
+                    iconOnly
+                    disabled={!nameUz.trim()}
+                  />
+                  <TranslateButton
+                    value={nameEn}
+                    direction="en-to-ru"
+                    onTranslated={setName}
+                    iconOnly
+                    disabled={!nameEn.trim()}
+                  />
+                </div>
+              </div>
+              <Input
+                id="tag-name-en"
+                value={nameEn}
+                onChange={(e) => setNameEn(e.target.value)}
               />
             </div>
             <div>

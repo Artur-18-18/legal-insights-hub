@@ -6,15 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, FileText, ExternalLink, ArrowLeft, Download } from "lucide-react";
 import { format } from "date-fns";
-import { ru } from "date-fns/locale";
-import { uz } from "date-fns/locale";
-import { useI18n, useLocalized } from "@/lib/i18n";
+import { useI18n, useLocalized, getDateFnsLocale } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import { getPostBySlug } from "@/lib/mock-data";
 import html2pdf from "html2pdf.js";
 
 interface PostTag {
-  tags: { name: string; name_uz?: string; slug: string } | null;
+  tags: { name: string; name_uz?: string; name_en?: string; slug: string } | null;
 }
 
 interface Post {
@@ -22,17 +20,26 @@ interface Post {
   id?: string;
   title: string;
   title_uz?: string;
+  title_en?: string;
   slug: string;
   excerpt: string | null;
   excerpt_uz?: string;
+  excerpt_en?: string;
   content: string;
   content_uz?: string;
+  content_en?: string;
   featured_image: string | null;
   created_at: string;
   author_name: string;
   published: boolean;
   legislation_links: Array<{ title: string; url: string }>;
-  categories: { name: string; name_uz?: string; slug: string; icon: string | null } | null;
+  categories: {
+    name: string;
+    name_uz?: string;
+    name_en?: string;
+    slug: string;
+    icon: string | null;
+  } | null;
   post_tags: PostTag[];
   post_images: Array<{ url: string; alt_text: string | null }>;
   post_videos?: Array<{ url: string; alt_text: string | null }>;
@@ -52,15 +59,27 @@ const PostPage = () => {
     setLoading(true);
     api.getPost(slug)
       .then((data) => {
-        const cat = data.category as { name: string; name_uz?: string; slug: string; icon?: string | null } | null;
+        const cat = data.category as {
+          name: string;
+          name_uz?: string;
+          name_en?: string;
+          slug: string;
+          icon?: string | null;
+        } | null;
         setPost({
           ...data,
           categories: cat
-            ? { name: cat.name, name_uz: cat.name_uz, slug: cat.slug, icon: cat.icon ?? null }
+            ? {
+                name: cat.name,
+                name_uz: cat.name_uz,
+                name_en: cat.name_en,
+                slug: cat.slug,
+                icon: cat.icon ?? null,
+              }
             : null,
           post_tags: data.tags
-            ? data.tags.map((tag: { name: string; name_uz?: string; slug: string }) => ({
-                tags: { name: tag.name, name_uz: tag.name_uz, slug: tag.slug },
+            ? data.tags.map((tag: { name: string; name_uz?: string; name_en?: string; slug: string }) => ({
+                tags: { name: tag.name, name_uz: tag.name_uz, name_en: tag.name_en, slug: tag.slug },
               }))
             : [],
         });
@@ -138,7 +157,7 @@ const PostPage = () => {
   const title = localized(post, "title") || post.title;
   const excerpt = localized(post, "excerpt") || post.excerpt;
   const content = localized(post, "content") || post.content;
-  const dateLocale = lang === "uz" ? uz : ru;
+  const dateLocale = getDateFnsLocale(lang);
   const siteUrl = typeof window !== "undefined" ? window.location.origin : "";
   const postUrl = `${siteUrl}/post/${post.slug}`;
   const imageUrl = post.featured_image || `${siteUrl}/og-image.jpg`;
@@ -171,7 +190,7 @@ const PostPage = () => {
           <div className="flex items-center gap-2 mb-3 flex-wrap">
             {post.categories && (
               <Link to={`/category/${post.categories.slug}`}>
-                <Badge variant="secondary">{post.categories.name_uz && lang === "uz" ? post.categories.name_uz : post.categories.name}</Badge>
+                <Badge variant="secondary">{localized(post.categories, "name") || post.categories.name}</Badge>
               </Link>
             )}
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -275,7 +294,7 @@ const PostPage = () => {
             {post.post_tags.map((pt) =>
               pt.tags ? (
                 <Link key={pt.tags.slug} to={`/tag/${pt.tags.slug}`}>
-                  <Badge variant="outline">#{pt.tags.name_uz && lang === "uz" ? pt.tags.name_uz : pt.tags.name}</Badge>
+                  <Badge variant="outline">#{localized(pt.tags, "name") || pt.tags.name}</Badge>
                 </Link>
               ) : null
             )}

@@ -7,7 +7,31 @@ import { useI18n } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-export type TranslateDirection = "ru-to-uz" | "uz-to-ru";
+export type TranslateDirection =
+  | "ru-to-uz"
+  | "uz-to-ru"
+  | "ru-to-en"
+  | "en-to-ru"
+  | "uz-to-en"
+  | "en-to-uz";
+
+const DIR_LANGS: Record<TranslateDirection, [string, string]> = {
+  "ru-to-uz": ["ru", "uz"],
+  "uz-to-ru": ["uz", "ru"],
+  "ru-to-en": ["ru", "en"],
+  "en-to-ru": ["en", "ru"],
+  "uz-to-en": ["uz", "en"],
+  "en-to-uz": ["en", "uz"],
+};
+
+const TOOLTIP_KEY: Record<TranslateDirection, string> = {
+  "ru-to-uz": "translate.ru_to_uz",
+  "uz-to-ru": "translate.uz_to_ru",
+  "ru-to-en": "translate.ru_to_en",
+  "en-to-ru": "translate.en_to_ru",
+  "uz-to-en": "translate.uz_to_en",
+  "en-to-uz": "translate.en_to_uz",
+};
 
 interface TranslateButtonProps {
   value: string;
@@ -38,7 +62,7 @@ export function TranslateButton({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
-  const [source, target] = direction === "ru-to-uz" ? ["ru", "uz"] : ["uz", "ru"];
+  const [source, target] = DIR_LANGS[direction];
 
   const handleTranslate = async () => {
     if (!value || !value.trim()) {
@@ -53,8 +77,8 @@ export function TranslateButton({
     try {
       const { translated } = await api.translate({
         text: value,
-        source: source as "ru" | "uz",
-        target: target as "ru" | "uz",
+        source: source as "ru" | "uz" | "en",
+        target: target as "ru" | "uz" | "en",
         format,
       });
       onTranslated(translated);
@@ -74,9 +98,7 @@ export function TranslateButton({
     }
   };
 
-  const tooltipText = direction === "ru-to-uz"
-    ? t("translate.ru_to_uz")
-    : t("translate.uz_to_ru");
+  const tooltipText = t(TOOLTIP_KEY[direction]);
 
   const buttonContent = (
     <Button

@@ -30,6 +30,7 @@ interface Post {
   id: string;
   title: string;
   title_uz?: string;
+  title_en?: string;
   slug: string;
   excerpt: string | null;
   published: boolean;
@@ -37,6 +38,7 @@ interface Post {
   category: {
     name: string;
     name_uz?: string;
+    name_en?: string;
     slug: string;
   } | null;
 }
@@ -60,16 +62,18 @@ export default function PostsList() {
             id?: string;
             title: string;
             title_uz?: string;
+            title_en?: string;
             slug: string;
             excerpt?: string;
             published?: boolean;
             created_at: string;
-            category?: { name: string; name_uz?: string; slug: string } | null;
+            category?: { name: string; name_uz?: string; name_en?: string; slug: string } | null;
           }>
         ).map((post) => ({
           id: String(post._id ?? post.id ?? ""),
           title: post.title,
           title_uz: post.title_uz,
+          title_en: post.title_en,
           slug: post.slug,
           excerpt: post.excerpt || "",
           published: post.published || false,
@@ -111,7 +115,9 @@ export default function PostsList() {
 
   const formatDate = (iso: string) => {
     try {
-      return new Date(iso).toLocaleDateString(lang === "uz" ? "uz-UZ" : "ru-RU");
+      return new Date(iso).toLocaleDateString(
+        lang === "uz" ? "uz-UZ" : lang === "en" ? "en-US" : "ru-RU",
+      );
     } catch {
       return iso;
     }
