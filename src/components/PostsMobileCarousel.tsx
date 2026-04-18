@@ -46,14 +46,14 @@ export function PostsMobileCarousel({
   /** Один пост в категории — статичная карточка, без свайпа и точек. */
   if (posts.length === 1) {
     return (
-      <div className={cn("md:hidden w-full", className)}>
+      <div className={cn("md:hidden w-full touch-pan-x", className)}>
         <PostCard post={posts[0]} />
       </div>
     );
   }
 
   return (
-    <div className={cn("md:hidden w-full", className)}>
+    <div className={cn("md:hidden w-full touch-pan-x", className)}>
       <Carousel
         setApi={setApi}
         opts={{
@@ -61,6 +61,7 @@ export function PostsMobileCarousel({
           loop: true,
           containScroll: "trimSnaps",
           dragFree: false,
+          watchDrag: true,
         }}
         className="w-full"
       >
