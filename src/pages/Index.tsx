@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { Layout } from "@/components/Layout";
 import { PostCard } from "@/components/PostCard";
@@ -6,19 +6,35 @@ import { CategoryCard } from "@/components/CategoryCard";
 import { PostsMobileCarousel } from "@/components/PostsMobileCarousel";
 import { Scale, BookOpen, Search as SearchIcon } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, useLocalized } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import type { Post, Category as CategoryType } from "@/lib/mock-data";
 
+const UNCATEGORIZED_KEY = "__none__";
+
+type FeedPost = Post & {
+  category?: { slug: string; name?: string } | null;
+  categories?: { slug: string; name?: string } | null;
+};
+
+function categorySlugOf(post: FeedPost): string | null {
+  return post.category?.slug ?? post.categories?.slug ?? null;
+}
+
+function sortByDateDesc(a: FeedPost, b: FeedPost) {
+  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+}
+
 const Index = () => {
   const { t } = useI18n();
+  const localized = useLocalized();
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([api.getPosts({ limit: 18 }), api.getCategories()])
+    Promise.all([api.getPosts({ limit: 120 }), api.getCategories()])
       .then(([postsData, catsData]) => {
         setPosts(postsData as Post[]);
         setCategories(catsData);
@@ -35,7 +51,63 @@ const Index = () => {
 
   const mapPost = (post: Post) => post;
 
-  const publishedPosts = posts.filter((p) => p.published);
+  const publishedPosts = useMemo(() => {
+    const list = posts.filter((p) => p.published) as FeedPost[];
+    return [...list].sort(sortByDateDesc);
+  }, [posts]);
+
+  const mobileSections = useMemo(() => {
+    const bySlug = new Map<string, FeedPost[]>();
+
+    for (const p of publishedPosts) {
+      const slug = categorySlugOf(p) ?? UNCATEGORIZED_KEY;
+      if (!bySlug.has(slug)) bySlug.set(slug, []);
+      bySlug.get(slug)!.push(p);
+    }
+
+    for (const list of bySlug.values()) {
+      list.sort(sortByDateDesc);
+    }
+
+    const out: Array<{
+      key: string;
+      slug: string;
+      posts: FeedPost[];
+      meta: CategoryType | null;
+    }> = [];
+    const used = new Set<string>();
+
+    for (const cat of categories) {
+      const list = bySlug.get(cat.slug);
+      if (list?.length) {
+        out.push({ key: cat.slug, slug: cat.slug, posts: list, meta: cat });
+        used.add(cat.slug);
+      }
+    }
+
+    for (const [slug, list] of bySlug) {
+      if (!list.length || slug === UNCATEGORIZED_KEY || used.has(slug)) continue;
+      out.push({
+        key: slug,
+        slug,
+        posts: list,
+        meta: categories.find((c) => c.slug === slug) ?? null,
+      });
+      used.add(slug);
+    }
+
+    const unc = bySlug.get(UNCATEGORIZED_KEY);
+    if (unc?.length) {
+      out.push({
+        key: UNCATEGORIZED_KEY,
+        slug: UNCATEGORIZED_KEY,
+        posts: unc,
+        meta: null,
+      });
+    }
+
+    return out;
+  }, [publishedPosts, categories]);
 
   return (
     <Layout>
@@ -112,7 +184,46 @@ const Index = () => {
           </div>
         ) : publishedPosts.length > 0 ? (
           <>
-            <PostsMobileCarousel posts={publishedPosts} ariaLabel={t("category.posts_slider")} />
+            <div className="md:hidden space-y-10">
+              {mobileSections.map((section) => {
+                const title =
+                  section.slug === UNCATEGORIZED_KEY
+                    ? t("posts.uncategorized")
+                    : section.meta
+                      ? localized(section.meta, "name") || section.meta.name
+                      : (() => {
+                          const p0 = section.posts[0];
+                          const c = p0?.category ?? p0?.categories;
+                          if (!c) return section.slug;
+                          return localized(c, "name") || c.name || section.slug;
+                        })();
+
+                const ariaForSlider =
+                  section.slug === UNCATEGORIZED_KEY
+                    ? t("category.posts_slider")
+                    : `${title}: ${t("category.posts_slider")}`;
+
+                return (
+                  <div key={section.key}>
+                    <div className="flex flex-col gap-2 mb-3">
+                      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+                        <h3 className="font-serif text-lg font-semibold">{title}</h3>
+                        {section.slug !== UNCATEGORIZED_KEY && (
+                          <Link
+                            to={`/category/${section.slug}`}
+                            className="text-sm font-medium text-gold hover:underline shrink-0"
+                          >
+                            {t("posts.all_in_category")} →
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                    <PostsMobileCarousel posts={section.posts} ariaLabel={ariaForSlider} />
+                  </div>
+                );
+              })}
+            </div>
+
             <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {publishedPosts.map((post) => (
                 <PostCard key={post.id} post={mapPost(post)} />
