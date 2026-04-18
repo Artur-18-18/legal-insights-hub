@@ -8,6 +8,15 @@ import {
 
 const router = express.Router();
 
+// POST /api/auth/logout — сброс cookie (httpOnly нельзя удалить с клиента)
+router.post("/logout", (req, res) => {
+  const isProd = process.env.NODE_ENV === "production";
+  const clear = ["admin_token=", "Path=/", "HttpOnly", "SameSite=Lax", "Max-Age=0"];
+  if (isProd) clear.push("Secure");
+  res.setHeader("Set-Cookie", clear.join("; "));
+  res.json({ ok: true });
+});
+
 // POST /api/auth/login
 router.post("/login", async (req, res) => {
   try {
@@ -32,6 +41,18 @@ router.post("/login", async (req, res) => {
       process.env.JWT_SECRET || "secret-key-change-in-production",
       { expiresIn: "7d" },
     );
+
+    const isProd = process.env.NODE_ENV === "production";
+    const maxAge = 7 * 24 * 3600;
+    const cookieParts = [
+      `admin_token=${encodeURIComponent(token)}`,
+      "Path=/",
+      "HttpOnly",
+      "SameSite=Lax",
+      `Max-Age=${maxAge}`,
+    ];
+    if (isProd) cookieParts.push("Secure");
+    res.setHeader("Set-Cookie", cookieParts.join("; "));
 
     res.json({
       token,

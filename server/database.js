@@ -18,6 +18,15 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function safeJsonArray(raw) {
+  try {
+    const v = JSON.parse(raw || "[]");
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+
 function rowCategory(row) {
   if (!row) return null;
   const id = String(row.id);
@@ -102,7 +111,7 @@ function hydratePost(postRow) {
     updated_at: postRow.updated_at,
     author_name: postRow.author_name,
     published: Boolean(postRow.published),
-    legislation_links: JSON.parse(postRow.legislation_links_json || "[]"),
+    legislation_links: safeJsonArray(postRow.legislation_links_json),
     category,
     tags,
     post_images: images,
@@ -513,9 +522,7 @@ export function updatePost(id, body) {
 
   const t = nowIso();
   const legislation = JSON.stringify(
-    body.legislation_links !== undefined
-      ? body.legislation_links
-      : JSON.parse(cur.legislation_links_json || "[]"),
+    body.legislation_links !== undefined ? body.legislation_links : safeJsonArray(cur.legislation_links_json),
   );
   let category_id = cur.category_id;
   if (body.category !== undefined) {

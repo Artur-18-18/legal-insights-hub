@@ -31,6 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useI18n, useLocalized } from "@/lib/i18n";
+import { useAuth } from "@/contexts/AuthContext";
 import { TranslateButton } from "@/components/TranslateButton";
 import { cn } from "@/lib/utils";
 
@@ -73,6 +74,7 @@ export default function PostForm() {
   const { toast } = useToast();
   const { t } = useI18n();
   const localized = useLocalized();
+  const { token } = useAuth();
 
   const [title, setTitle] = useState("");
   const [titleUz, setTitleUz] = useState("");
@@ -397,10 +399,10 @@ export default function PostForm() {
 
     try {
       if (isEdit) {
-        await api.updatePost(id!, body);
+        await api.updatePost(id!, body, token);
         toast({ title: t("admin.success"), description: t("admin.post_updated") });
       } else {
-        await api.createPost(body);
+        await api.createPost(body, token);
         toast({ title: t("admin.success"), description: t("admin.post_created") });
       }
       navigate("/admin/posts");

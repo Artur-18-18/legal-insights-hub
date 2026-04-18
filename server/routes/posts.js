@@ -22,13 +22,46 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET /api/posts/admin/all — admin only (до :slug)
-router.get("/admin/all", auth, async (req, res) => {
+const adminAllPosts = async (req, res) => {
   try {
     const posts = findPosts({});
     res.json(posts);
   } catch (error) {
     res.status(500).json({ error: "Ошибка получения постов" });
+  }
+};
+
+// GET /api/posts/admin/all — admin only (совместимость)
+router.get("/admin/all", auth, adminAllPosts);
+
+// POST /api/posts/admin/list — то же самое (клиент использует POST: надёжнее с прокси и Authorization)
+router.post("/admin/list", auth, adminAllPosts);
+
+// POST /api/posts/admin/create — создание (явный путь; до GET /:slug)
+router.post("/admin/create", auth, async (req, res) => {
+  try {
+    const post = createPost(req.body);
+    res.status(201).json(post);
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return res.status(400).json({ error: "Такой slug уже существует" });
+    }
+    console.error("POST /api/posts/admin/create error:", error);
+    res.status(500).json({ error: "Ошибка создания поста" });
+  }
+});
+
+// PUT /api/posts/admin/:id — обновление (явный путь)
+router.put("/admin/:id", auth, async (req, res) => {
+  try {
+    const post = updatePost(req.params.id, req.body);
+    if (!post) return res.status(404).json({ error: "Пост не найден" });
+    res.json(post);
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return res.status(400).json({ error: "Такой slug уже существует" });
+    }
+    res.status(500).json({ error: "Ошибка обновления поста" });
   }
 });
 

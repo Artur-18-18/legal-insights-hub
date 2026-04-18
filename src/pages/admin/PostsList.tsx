@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useI18n, useLocalized } from "@/lib/i18n";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Post {
   id: string;
@@ -47,14 +48,16 @@ export default function PostsList() {
   const { toast } = useToast();
   const { t, lang } = useI18n();
   const localized = useLocalized();
+  const { token } = useAuth();
 
   const fetchPosts = () => {
     api
-      .getAllPosts()
+      .getAllPosts(token)
       .then((data) => {
         const mapped = (
           data as Array<{
-            _id: string;
+            _id?: string;
+            id?: string;
             title: string;
             title_uz?: string;
             slug: string;
@@ -64,7 +67,7 @@ export default function PostsList() {
             category?: { name: string; name_uz?: string; slug: string } | null;
           }>
         ).map((post) => ({
-          id: post._id || "",
+          id: String(post._id ?? post.id ?? ""),
           title: post.title,
           title_uz: post.title_uz,
           slug: post.slug,
@@ -88,7 +91,7 @@ export default function PostsList() {
   useEffect(() => {
     fetchPosts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
+  }, [lang, token]);
 
   const handleDelete = async () => {
     if (!deleteId) return;

@@ -1,3 +1,5 @@
+import { getAdminToken } from "./authBridge";
+
 const API_URL = ""; // Same-origin in production, proxy in dev
 
 interface Category {
@@ -42,9 +44,9 @@ interface Post {
 
 /** Заголовки авторизации: Bearer + резервный X-Access-Token (часть прокси обрезает только Authorization). */
 export function getAuthHeaders(tokenOverride?: string | null): Record<string, string> {
-  const t =
-    tokenOverride ??
-    (typeof localStorage !== "undefined" ? localStorage.getItem("admin_token") : null);
+  const explicit =
+    tokenOverride != null && String(tokenOverride).trim() !== "" ? String(tokenOverride).trim() : null;
+  const t = explicit ?? getAdminToken();
   if (!t) return {};
   return {
     Authorization: `Bearer ${t}`,
@@ -71,8 +73,10 @@ function mergeRequestHeaders(options?: RequestInit): Record<string, string> {
 }
 
 async function fetchAPI(endpoint: string, options?: RequestInit): Promise<unknown> {
+  const { headers: _skip, ...rest } = options ?? {};
   const res = await fetch(`${API_URL}/api${endpoint}`, {
-    ...options,
+    ...rest,
+    credentials: rest.credentials ?? "same-origin",
     headers: mergeRequestHeaders(options),
   });
 
@@ -90,9 +94,13 @@ export const api = {
   getPosts: async () => {
     return fetchAPI("/posts?published=true") as Promise<Post[]>;
   },
-  getAllPosts: async () => {
-    return fetchAPI("/posts/admin/all", {
-      headers: getAuthHeaders(),
+  /** POST вместо GET: Vite/прокси иногда не передают Authorization на GET /api/.../admin/all */
+  getAllPosts: async (token?: string | null) => {
+    return fetchAPI("/posts/admin/list", {
+      method: "POST",
+      headers: getAuthHeaders(token),
+      body: "{}",
+      cache: "no-store",
     }) as Promise<Post[]>;
   },
   getPost: async (slug: string) => {
@@ -107,17 +115,17 @@ export const api = {
       headers: getAuthHeaders(),
     }) as Promise<Post>;
   },
-  createPost: async (body: unknown) => {
-    return fetchAPI("/posts", {
+  createPost: async (body: unknown, token?: string | null) => {
+    return fetchAPI("/posts/admin/create", {
       method: "POST",
-      headers: getAuthHeaders(),
+      headers: getAuthHeaders(token),
       body: JSON.stringify(body),
     }) as Promise<Post>;
   },
-  updatePost: async (id: string, body: unknown) => {
-    return fetchAPI(`/posts/${id}`, {
+  updatePost: async (id: string, body: unknown, token?: string | null) => {
+    return fetchAPI(`/posts/admin/${encodeURIComponent(id)}`, {
       method: "PUT",
-      headers: getAuthHeaders(),
+      headers: getAuthHeaders(token),
       body: JSON.stringify(body),
     }) as Promise<Post>;
   },

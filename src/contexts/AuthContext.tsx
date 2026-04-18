@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { decodeJwtPayload } from "@/lib/jwtPayload";
+import { registerAdminTokenSource } from "@/lib/authBridge";
 
 interface User {
   id: string;
@@ -22,25 +23,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("admin_token"));
   const [user, setUser] = useState<User | null>(null);
 
-  // Decode token and restore session on mount
+  // Синхронно перед дочерними компонентами — api.getAdminToken() всегда актуален при сабмите форм
+  registerAdminTokenSource(() => token?.trim() || localStorage.getItem("admin_token")?.trim() || null);
+
+  // Декодим JWT для отображения имени; при ошибке декода не удаляем токен — проверка на сервере
   useEffect(() => {
-    if (token) {
-      const payload = decodeJwtPayload<{
-        id?: string;
-        email?: string;
-        name?: string;
-        role?: string;
-      }>(token);
-      if (!payload) {
-        setToken(null);
-        localStorage.removeItem("admin_token");
-        return;
-      }
+    if (!token) {
+      setUser(null);
+      return;
+    }
+    const payload = decodeJwtPayload<{
+      id?: string;
+      email?: string;
+      name?: string;
+      role?: string;
+    }>(token);
+    if (payload) {
       setUser({
         id: payload.id || "1",
         email: payload.email ?? "",
         name: typeof payload.name === "string" ? payload.name : "",
         role: payload.role || "admin",
+      });
+    } else {
+      setUser({
+        id: "1",
+        email: "",
+        name: "",
+        role: "admin",
       });
     }
   }, [token]);
@@ -50,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
+      credentials: "same-origin",
     });
 
     if (!res.ok) {
@@ -67,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUser(null);
     localStorage.removeItem("admin_token");
+    fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }).catch(() => {});
   };
 
   return (

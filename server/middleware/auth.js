@@ -4,7 +4,25 @@ function getJwtSecret() {
   return process.env.JWT_SECRET || "secret-key-change-in-production";
 }
 
-/** Токен из Authorization: Bearer … или резервно X-Access-Token (если прокси режет Authorization). */
+function parseCookies(cookieHeader) {
+  if (!cookieHeader || typeof cookieHeader !== "string") return {};
+  const out = {};
+  for (const part of cookieHeader.split(";")) {
+    const idx = part.indexOf("=");
+    if (idx === -1) continue;
+    const key = part.slice(0, idx).trim();
+    let val = part.slice(idx + 1).trim();
+    try {
+      val = decodeURIComponent(val);
+    } catch {
+      /* ignore */
+    }
+    out[key] = val;
+  }
+  return out;
+}
+
+/** Токен: Authorization → X-Access-Token → cookie admin_token (если прокси режет заголовки). */
 function extractAccessToken(req) {
   const auth = req.headers.authorization;
   if (typeof auth === "string") {
@@ -13,6 +31,8 @@ function extractAccessToken(req) {
   }
   const x = req.headers["x-access-token"];
   if (typeof x === "string" && x.trim()) return x.trim();
+  const fromCookie = parseCookies(req.headers.cookie).admin_token;
+  if (typeof fromCookie === "string" && fromCookie.trim()) return fromCookie.trim();
   return null;
 }
 
