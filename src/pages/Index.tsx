@@ -3,23 +3,31 @@ import { Helmet } from "react-helmet-async";
 import { Layout } from "@/components/Layout";
 import { PostCard } from "@/components/PostCard";
 import { CategoryCard } from "@/components/CategoryCard";
+import { PostsMobileCarousel } from "@/components/PostsMobileCarousel";
 import { Scale, BookOpen, Search as SearchIcon } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, useLocalized } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import type { Post, Category as CategoryType } from "@/lib/mock-data";
 
+/** Slug категории для блока материалов на главной (на телефоне — карусель с точками). */
+const HOME_FEATURED_POSTS_CATEGORY_SLUG = "corporate-law";
+
 const Index = () => {
   const { t } = useI18n();
+  const localized = useLocalized();
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([api.getPosts({ limit: 18 }), api.getCategories()])
+    Promise.all([
+      api.getPosts({ category: HOME_FEATURED_POSTS_CATEGORY_SLUG, limit: 18 }),
+      api.getCategories(),
+    ])
       .then(([postsData, catsData]) => {
-        setPosts(postsData);
+        setPosts(postsData as Post[]);
         setCategories(catsData);
       })
       .catch((err) => {
@@ -33,6 +41,16 @@ const Index = () => {
   const mapCategory = (cat: CategoryType) => cat;
 
   const mapPost = (post: Post) => post;
+
+  const featuredCategoryMeta = categories.find((c) => c.slug === HOME_FEATURED_POSTS_CATEGORY_SLUG);
+  const sectionTitle =
+    featuredCategoryMeta != null
+      ? t("posts.latest_in_category", {
+          name: localized(featuredCategoryMeta, "name") || featuredCategoryMeta.name,
+        })
+      : t("posts.latest");
+
+  const publishedPosts = posts.filter((p) => p.published);
 
   return (
     <Layout>
@@ -63,7 +81,7 @@ const Index = () => {
               <SearchIcon className="h-4 w-4" /> {t("nav.search")}
             </Link>
             <Link
-              to="/category/corporate-law"
+              to={`/category/${HOME_FEATURED_POSTS_CATEGORY_SLUG}`}
               className="inline-flex items-center justify-center gap-2 bg-primary-foreground/10 border border-primary-foreground/20 px-5 py-2.5 rounded-md text-sm font-medium text-primary-foreground hover:bg-primary-foreground/20 transition-colors"
             >
               <BookOpen className="h-4 w-4" /> {t("nav.categories")}
@@ -100,19 +118,32 @@ const Index = () => {
       </section>
 
       <section className="container mx-auto px-4 pb-12 md:pb-16">
-        <h2 className="font-serif text-xl md:text-2xl font-bold mb-4 md:mb-6">{t("posts.latest")}</h2>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-4 md:mb-6">
+          <h2 className="font-serif text-xl md:text-2xl font-bold">{sectionTitle}</h2>
+          {!loading && publishedPosts.length > 0 && (
+            <Link
+              to={`/category/${HOME_FEATURED_POSTS_CATEGORY_SLUG}`}
+              className="text-sm font-medium text-gold hover:underline shrink-0 self-start sm:self-auto"
+            >
+              {t("posts.view_category")} →
+            </Link>
+          )}
+        </div>
         {loading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-48 bg-muted rounded animate-pulse" />
             ))}
           </div>
-        ) : posts.filter((p) => p.published).length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {posts.filter((p) => p.published).map((post) => (
-              <PostCard key={post.id} post={mapPost(post)} />
-            ))}
-          </div>
+        ) : publishedPosts.length > 0 ? (
+          <>
+            <PostsMobileCarousel posts={publishedPosts} ariaLabel={t("posts.slider")} />
+            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {publishedPosts.map((post) => (
+                <PostCard key={post.id} post={mapPost(post)} />
+              ))}
+            </div>
+          </>
         ) : (
           <div className="text-center py-12 md:py-16 text-muted-foreground">
             <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
