@@ -67,24 +67,10 @@ const SearchPage = () => {
       return;
     }
     setLoading(true);
-    api.getPosts()
-      .then((allPosts: Post[]) => {
-        const q = initialQuery.toLowerCase();
-        const inStr = (s: string | null | undefined) => (s ?? "").toLowerCase().includes(q);
-        const filtered = allPosts.filter(
-          (p) =>
-            p.published &&
-            (inStr(p.title) ||
-              inStr(p.title_uz) ||
-              inStr(p.title_en) ||
-              inStr(p.content) ||
-              inStr(p.content_uz) ||
-              inStr(p.content_en) ||
-              inStr(p.excerpt) ||
-              inStr(p.excerpt_uz) ||
-              inStr(p.excerpt_en)),
-        );
-        setResults(filtered);
+    api
+      .getPosts({ search: initialQuery })
+      .then((data) => {
+        setResults(data as Post[]);
       })
       .catch(() => {
         setResults(searchPostsMock(initialQuery) as unknown as Post[]);

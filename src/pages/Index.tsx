@@ -17,7 +17,7 @@ const Index = () => {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([api.getPosts(), api.getCategories()])
+    Promise.all([api.getPosts({ limit: 18 }), api.getCategories()])
       .then(([postsData, catsData]) => {
         setPosts(postsData);
         setCategories(catsData);
@@ -74,15 +74,26 @@ const Index = () => {
 
       <section className="container mx-auto px-4 -mt-6 md:-mt-8 relative z-10 mb-10 md:mb-12">
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 md:gap-3">
+          <div className="flex md:grid md:grid-cols-5 gap-3 overflow-hidden -mx-4 px-4 md:mx-0 md:px-0">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-20 bg-muted rounded animate-pulse" />
+              <div
+                key={i}
+                className="shrink-0 w-[min(260px,88vw)] md:w-auto h-20 bg-muted rounded animate-pulse"
+              />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 md:gap-3">
+          <div
+            className="flex md:grid md:grid-cols-5 gap-3 overflow-x-auto snap-x snap-mandatory pb-1 -mx-4 px-4 md:mx-0 md:px-0 scroll-pl-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
             {categories.map((cat) => (
-              <CategoryCard key={cat.id || cat.slug} category={mapCategory(cat)} />
+              <div
+                key={cat.id || cat.slug}
+                className="snap-center shrink-0 w-[min(260px,88vw)] sm:w-[min(240px,45%)] md:w-auto md:min-w-0 md:shrink"
+              >
+                <CategoryCard category={mapCategory(cat)} />
+              </div>
             ))}
           </div>
         )}

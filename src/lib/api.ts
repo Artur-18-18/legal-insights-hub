@@ -104,8 +104,21 @@ async function fetchAPI(endpoint: string, options?: RequestInit): Promise<unknow
 
 export const api = {
   // Posts
-  getPosts: async () => {
-    return fetchAPI("/posts?published=true") as Promise<Post[]>;
+  /** Публичные посты; фильтры и лимит снижают объём данных (быстрее главная, категории, теги). */
+  getPosts: async (opts?: {
+    category?: string;
+    tag?: string;
+    search?: string;
+    limit?: number;
+  }) => {
+    const sp = new URLSearchParams({ published: "true" });
+    if (opts?.category) sp.set("category", opts.category);
+    if (opts?.tag) sp.set("tag", opts.tag);
+    if (opts?.search != null && String(opts.search).trim()) sp.set("search", String(opts.search).trim());
+    if (opts?.limit != null && Number.isFinite(opts.limit) && opts.limit > 0) {
+      sp.set("limit", String(Math.min(200, Math.floor(opts.limit))));
+    }
+    return fetchAPI(`/posts?${sp.toString()}`) as Promise<Post[]>;
   },
   /** POST вместо GET: Vite/прокси иногда не передают Authorization на GET /api/.../admin/all */
   getAllPosts: async (token?: string | null) => {
@@ -156,6 +169,22 @@ export const api = {
       ...category,
       id: category.id || category._id,
     }));
+  },
+  /** Одна категория по slug; 404 → null (без исключения). */
+  getCategoryBySlug: async (slug: string): Promise<Category | null> => {
+    const res = await fetch(`${API_URL}/api/categories/${encodeURIComponent(slug)}`, {
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({ error: "Request failed" }))) as { error?: string };
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    const text = await res.text();
+    if (!text) return null;
+    const c = JSON.parse(text) as Category;
+    return { ...c, id: c.id || c._id };
   },
   createCategory: async (body: unknown) => {
     return fetchAPI("/categories", {

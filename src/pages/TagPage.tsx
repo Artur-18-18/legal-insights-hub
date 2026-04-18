@@ -44,45 +44,48 @@ const TagPage = () => {
 
   useEffect(() => {
     if (!slug) return;
+    let cancelled = false;
+    setLoading(true);
 
-    api.getPosts()
-      .then((allPosts) => {
-        api.getTags()
-          .then((allTags) => {
-            const foundTag = allTags.find((t: Tag) => t.slug === slug);
-            if (foundTag) {
-              setTag(foundTag);
-              const filtered = allPosts.filter(
-                (p: Post) =>
-                  p.published &&
-                  p.tags?.some((t: Tag) => t.slug === slug)
-              );
-              setPosts(filtered);
-            } else {
-              const mockData = getPostsByTag(slug);
-              if (mockData) {
-                setTag(mockData.tag as unknown as Tag);
-                setPosts(mockData.posts as unknown as Post[]);
-              }
-            }
-          })
-          .catch(() => {
-            const mockData = getPostsByTag(slug);
-            if (mockData) {
-              setTag(mockData.tag as unknown as Tag);
-              setPosts(mockData.posts as unknown as Post[]);
-            }
-          })
-          .finally(() => setLoading(false));
-      })
-      .catch(() => {
+    (async () => {
+      try {
+        const [postsData, allTags] = await Promise.all([
+          api.getPosts({ tag: slug }),
+          api.getTags(),
+        ]);
+        if (cancelled) return;
+        const foundTag = allTags.find((t: Tag) => t.slug === slug);
+        if (foundTag) {
+          setTag(foundTag);
+          setPosts(postsData as Post[]);
+        } else {
+          const mockData = getPostsByTag(slug);
+          if (mockData) {
+            setTag(mockData.tag as unknown as Tag);
+            setPosts(mockData.posts as unknown as Post[]);
+          } else {
+            setTag(null);
+            setPosts([]);
+          }
+        }
+      } catch {
+        if (cancelled) return;
         const mockData = getPostsByTag(slug);
         if (mockData) {
           setTag(mockData.tag as unknown as Tag);
           setPosts(mockData.posts as unknown as Post[]);
+        } else {
+          setTag(null);
+          setPosts([]);
         }
-        setLoading(false);
-      });
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
 
   if (loading) {

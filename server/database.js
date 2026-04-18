@@ -424,7 +424,7 @@ function replacePostRelations(postId, tags, post_images, post_videos) {
 }
 
 export function findPosts(query) {
-  const { published, category, tag, search } = query;
+  const { published, category, tag, search, limit } = query;
   const clauses = [];
   const params = [];
 
@@ -476,10 +476,18 @@ export function findPosts(query) {
     params.push(s, s, s, s, s, s, s, s, s);
   }
 
+  let lim = null;
+  if (limit !== undefined && limit !== "") {
+    const n = Number(limit);
+    if (Number.isFinite(n) && n > 0) lim = Math.min(200, Math.floor(n));
+  }
+
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-  const rows = db
-    .prepare(`SELECT p.* FROM posts p ${where} ORDER BY p.created_at DESC`)
-    .all(...params);
+  const orderSql = `SELECT p.* FROM posts p ${where} ORDER BY p.created_at DESC`;
+  const rows =
+    lim != null
+      ? db.prepare(`${orderSql} LIMIT ?`).all(...params, lim)
+      : db.prepare(orderSql).all(...params);
   return rows.map((r) => hydratePost(r));
 }
 
