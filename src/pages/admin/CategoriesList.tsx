@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useI18n, useLocalized } from "@/lib/i18n";
 import { TranslateButton } from "@/components/TranslateButton";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Category {
   id: string;
@@ -60,6 +61,7 @@ export default function CategoriesList() {
   const { toast } = useToast();
   const { t } = useI18n();
   const localized = useLocalized();
+  const { token } = useAuth();
 
   const fetchCategories = () => {
     api
@@ -145,7 +147,7 @@ export default function CategoriesList() {
     };
     try {
       if (editingId) {
-        await api.updateCategory(editingId, body);
+        await api.updateCategory(editingId, body, token);
         toast({ title: t("admin.save"), description: t("admin.cat_updated") });
       } else {
         await api.createCategory(body);
@@ -165,7 +167,7 @@ export default function CategoriesList() {
     if (!deleteTarget) return;
     const id = deleteTarget.id;
     try {
-      await api.deleteCategory(id);
+      await api.deleteCategory(id, token);
       toast({ title: t("admin.delete"), description: t("admin.cat_deleted") });
       setCategories((prev) => prev.filter((c) => c.id !== id));
     } catch {

@@ -40,15 +40,28 @@ interface Post {
   post_videos?: Array<{ url: string; alt_text: string | null }>;
 }
 
+function mergeRequestHeaders(options?: RequestInit): Record<string, string> {
+  const out: Record<string, string> = { "Content-Type": "application/json" };
+  const h = options?.headers;
+  if (!h) return out;
+  if (h instanceof Headers) {
+    h.forEach((value, key) => {
+      out[key] = value;
+    });
+    return out;
+  }
+  if (Array.isArray(h)) {
+    for (const [key, value] of h) out[key] = value;
+    return out;
+  }
+  Object.assign(out, h);
+  return out;
+}
+
 async function fetchAPI(endpoint: string, options?: RequestInit): Promise<unknown> {
-  // Spread `options` first, then set `headers`, so callers' Authorization is kept and
-  // Content-Type is never dropped (previously ...options overwrote merged headers).
   const res = await fetch(`${API_URL}/api${endpoint}`, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options?.headers as Record<string, string> | undefined),
-    },
+    headers: mergeRequestHeaders(options),
   });
 
   if (!res.ok) {
@@ -118,17 +131,19 @@ export const api = {
       body: JSON.stringify(body),
     }) as Promise<Category>;
   },
-  updateCategory: async (id: string, body: unknown) => {
-    return fetchAPI(`/categories/${id}`, {
+  updateCategory: async (id: string, body: unknown, token?: string | null) => {
+    const t = token ?? localStorage.getItem("admin_token");
+    return fetchAPI(`/categories/admin/${encodeURIComponent(id)}`, {
       method: "PUT",
-      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      headers: t ? { Authorization: `Bearer ${t}` } : {},
       body: JSON.stringify(body),
     }) as Promise<Category>;
   },
-  deleteCategory: async (id: string) => {
-    return fetchAPI(`/categories/${id}`, {
+  deleteCategory: async (id: string, token?: string | null) => {
+    const t = token ?? localStorage.getItem("admin_token");
+    return fetchAPI(`/categories/admin/${encodeURIComponent(id)}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      headers: t ? { Authorization: `Bearer ${t}` } : {},
     }) as Promise<Record<string, unknown>>;
   },
 
