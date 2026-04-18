@@ -149,13 +149,16 @@ function migrateMultilingualColumns() {
 }
 
 export function initDatabase() {
-  const dataDir = path.join(__dirname, "data");
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-  const dbPath = process.env.SQLITE_PATH || path.join(dataDir, "yuristblog.sqlite");
+  const defaultFile = path.join(__dirname, "data", "yuristblog.sqlite");
+  const dbPath = process.env.SQLITE_PATH
+    ? process.env.SQLITE_PATH
+    : process.env.DATA_DIR
+      ? path.join(process.env.DATA_DIR, "yuristblog.sqlite")
+      : defaultFile;
   const dbDir = path.dirname(path.resolve(dbPath));
   if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
   if (process.env.NODE_ENV === "production") {
-    console.log("SQLite database file:", dbPath);
+    console.log("SQLite database file:", path.resolve(dbPath));
   }
   db = new Database(dbPath);
   db.pragma("journal_mode = WAL");
@@ -720,12 +723,7 @@ export async function seedDatabase() {
       t,
     );
   }
-  const updCat = db.prepare(
-    "UPDATE categories SET name_uz = ?, description_uz = ?, name_en = ?, description_en = ? WHERE slug = ?",
-  );
-  for (const c of defaultCategories) {
-    updCat.run(c.name_uz, c.description_uz, c.name_en ?? null, c.description_en ?? null, c.slug);
-  }
+  /* Не обновляем строки при каждом запуске — иначе правки из админки затираются. */
 
   const insTag = db.prepare(
     "INSERT OR IGNORE INTO tags (name, name_uz, name_en, slug, created_at) VALUES (?, ?, ?, ?, ?)",
@@ -733,10 +731,7 @@ export async function seedDatabase() {
   for (const tg of defaultTags) {
     insTag.run(tg.name, tg.name_uz, tg.name_en ?? null, tg.slug, t);
   }
-  const updTag = db.prepare("UPDATE tags SET name_uz = ?, name_en = ? WHERE slug = ?");
-  for (const tg of defaultTags) {
-    updTag.run(tg.name_uz, tg.name_en ?? null, tg.slug);
-  }
+  /* Без UPDATE по slug — теги из админки не перезаписываются при рестарте. */
 
   const postCount = db.prepare("SELECT COUNT(*) AS c FROM posts").get().c;
   if (postCount === 0) {
