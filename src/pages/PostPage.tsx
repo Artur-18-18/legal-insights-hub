@@ -164,6 +164,24 @@ const PostPage = () => {
   const seoDescription = excerpt || content.replace(/<[^>]*>/g, "").substring(0, 160);
 
   const hasMedia = post.post_images.length > 0 || (post.post_videos && post.post_videos.length > 0);
+  const totalImages = post.post_images.length;
+  const collageImages = post.post_images.slice(0, 5);
+  const remainingImagesCount = Math.max(totalImages - collageImages.length, 0);
+  const getImageCollageClass = (index: number) => {
+    if (collageImages.length === 1) {
+      return "col-span-2 aspect-[16/10]";
+    }
+
+    if (collageImages.length === 2) {
+      return "aspect-[4/3]";
+    }
+
+    if (collageImages.length >= 3 && index === 0) {
+      return "col-span-2 aspect-[16/10]";
+    }
+
+    return "aspect-square";
+  };
 
   return (
     <Layout>
@@ -182,7 +200,7 @@ const PostPage = () => {
         <link rel="canonical" href={postUrl} />
       </Helmet>
       <article ref={articleRef} className="container mx-auto px-4 py-6 md:py-10 max-w-5xl print:max-w-none">
-        <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 md:mb-6 print:hidden">
+        <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 md:mb-6 print:hidden print-hidden">
           <ArrowLeft className="h-4 w-4" /> {t("posts.back")}
         </Link>
 
@@ -236,22 +254,36 @@ const PostPage = () => {
                   <h3 className="font-serif text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
                     {t("admin.images")}
                   </h3>
-                  <div className="space-y-3">
-                    {post.post_images.map((img, i) => (
-                      <img
-                        key={i}
-                        src={img.url}
-                        alt={img.alt_text || post.title}
-                        className="w-full rounded-lg shadow-sm hover:shadow-md transition-shadow object-cover"
-                        loading="lazy"
-                      />
-                    ))}
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                    {collageImages.map((img, i) => {
+                      const isLastVisible = i === collageImages.length - 1;
+                      const showRemainingBadge = isLastVisible && remainingImagesCount > 0;
+
+                      return (
+                        <div
+                          key={i}
+                          className={`relative overflow-hidden rounded-lg ${getImageCollageClass(i)}`}
+                        >
+                          <img
+                            src={img.url}
+                            alt={img.alt_text || post.title}
+                            className="w-full h-full shadow-sm hover:shadow-md transition-transform duration-300 hover:scale-[1.02] object-cover"
+                            loading="lazy"
+                          />
+                          {showRemainingBadge && (
+                            <div className="absolute inset-0 bg-black/45 flex items-center justify-center">
+                              <span className="text-white text-lg font-semibold">+{remainingImagesCount}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
               {post.post_videos && post.post_videos.length > 0 && (
-                <div>
+                <div className="print:hidden print-hidden">
                   <h3 className="font-serif text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
                     {t("posts.videos")}
                   </h3>
@@ -290,7 +322,7 @@ const PostPage = () => {
         )}
 
         {post.post_tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 print:hidden">
+          <div className="flex flex-wrap gap-2 print:hidden print-hidden">
             {post.post_tags.map((pt) =>
               pt.tags ? (
                 <Link key={pt.tags.slug} to={`/tag/${pt.tags.slug}`}>
