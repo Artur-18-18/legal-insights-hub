@@ -426,6 +426,34 @@ function replacePostRelations(postId, tags, post_images, post_videos) {
   });
 }
 
+/** HTML → plain text for search (SQLite lower() is ASCII-only). */
+function stripHtmlForSearch(html) {
+  return String(html || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function postMatchesTextSearch(post, needleLower) {
+  try {
+    const parts = [
+      post.title,
+      post.title_uz,
+      post.title_en,
+      post.excerpt,
+      post.excerpt_uz,
+      post.excerpt_en,
+      stripHtmlForSearch(post.content),
+      stripHtmlForSearch(post.content_uz),
+      stripHtmlForSearch(post.content_en),
+    ];
+    const haystack = parts.filter(Boolean).join("\n").toLowerCase();
+    return haystack.includes(needleLower);
+  } catch {
+    return false;
+  }
+}
+
 export function findPosts(query) {
   const { published, category, tag, search, limit } = query;
   const clauses = [];
@@ -463,21 +491,9 @@ export function findPosts(query) {
       params.push(String(tag));
     }
   }
-  if (search && String(search).trim()) {
-    const s = String(search).trim().toLowerCase();
-    clauses.push(`(
-      instr(lower(coalesce(p.title,'')), ?) > 0 OR
-      instr(lower(coalesce(p.title_uz,'')), ?) > 0 OR
-      instr(lower(coalesce(p.title_en,'')), ?) > 0 OR
-      instr(lower(coalesce(p.content,'')), ?) > 0 OR
-      instr(lower(coalesce(p.content_uz,'')), ?) > 0 OR
-      instr(lower(coalesce(p.content_en,'')), ?) > 0 OR
-      instr(lower(coalesce(p.excerpt,'')), ?) > 0 OR
-      instr(lower(coalesce(p.excerpt_uz,'')), ?) > 0 OR
-      instr(lower(coalesce(p.excerpt_en,'')), ?) > 0
-    )`);
-    params.push(s, s, s, s, s, s, s, s, s);
-  }
+
+  const searchRaw = search && String(search).trim() ? String(search).trim() : "";
+  const searchActive = searchRaw.length > 0;
 
   let lim = null;
   if (limit !== undefined && limit !== "") {
@@ -487,11 +503,18 @@ export function findPosts(query) {
 
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   const orderSql = `SELECT p.* FROM posts p ${where} ORDER BY p.created_at DESC`;
-  const rows =
-    lim != null
-      ? db.prepare(`${orderSql} LIMIT ?`).all(...params, lim)
-      : db.prepare(orderSql).all(...params);
-  return rows.map((r) => hydratePost(r));
+  /* Текстовый поиск в JS: SQLite lower() не обрабатывает кириллицу — русские запросы не находили статьи. */
+  const applySqlLimit = lim != null && !searchActive;
+  const rows = applySqlLimit
+    ? db.prepare(`${orderSql} LIMIT ?`).all(...params, lim)
+    : db.prepare(orderSql).all(...params);
+  let posts = rows.map((r) => hydratePost(r));
+  if (searchActive) {
+    const needle = searchRaw.toLowerCase();
+    posts = posts.filter((p) => postMatchesTextSearch(p, needle));
+    if (lim != null) posts = posts.slice(0, lim);
+  }
+  return posts;
 }
 
 export function findPostBySlug(slug) {

@@ -22,6 +22,8 @@ export default defineConfig(({ mode }) => ({
             if (auth) proxyReq.setHeader("Authorization", auth);
             const x = req.headers["x-access-token"];
             if (x) proxyReq.setHeader("X-Access-Token", x);
+            const cookie = req.headers.cookie;
+            if (cookie) proxyReq.setHeader("Cookie", cookie);
           });
         },
       },

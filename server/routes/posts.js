@@ -27,7 +27,10 @@ const adminAllPosts = async (req, res) => {
     const posts = findPosts({});
     res.json(posts);
   } catch (error) {
-    res.status(500).json({ error: "Ошибка получения постов" });
+    console.error("adminAllPosts / findPosts:", error);
+    res.status(500).json({
+      error: error?.message ? String(error.message) : "Ошибка получения постов",
+    });
   }
 };
 

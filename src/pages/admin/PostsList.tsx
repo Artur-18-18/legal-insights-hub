@@ -82,10 +82,13 @@ export default function PostsList() {
         }));
         setPosts(mapped);
       })
-      .catch(() =>
+      .catch((err: unknown) =>
         toast({
           title: t("admin.error"),
-          description: t("admin.post_load_err"),
+          description:
+            err instanceof Error && err.message
+              ? `${t("admin.post_load_err")}: ${err.message}`
+              : t("admin.post_load_err"),
           variant: "destructive",
         }),
       )

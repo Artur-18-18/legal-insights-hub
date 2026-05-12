@@ -68,7 +68,15 @@ export function getAuthHeaders(tokenOverride?: string | null): Record<string, st
 }
 
 function mergeRequestHeaders(options?: RequestInit): Record<string, string> {
-  const out: Record<string, string> = { "Content-Type": "application/json" };
+  const method = (options?.method ?? "GET").toUpperCase();
+  const out: Record<string, string> = {};
+  const hasBody =
+    options?.body != null &&
+    !(typeof options.body === "string" && options.body.length === 0);
+  /* Не вешаем application/json на обычный GET без тела — часть прокси/хостов отвечают 400/502, ломая списки постов. */
+  if (hasBody || method === "POST" || method === "PUT" || method === "PATCH") {
+    out["Content-Type"] = "application/json";
+  }
   const h = options?.headers;
   if (!h) return out;
   if (h instanceof Headers) {
@@ -99,7 +107,12 @@ async function fetchAPI(endpoint: string, options?: RequestInit): Promise<unknow
   }
 
   const text = await res.text();
-  return text ? JSON.parse(text) : null;
+  if (!text || !text.trim()) return null;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw new Error(`Некорректный JSON от сервера (${res.status}): ${text.slice(0, 200)}`);
+  }
 }
 
 export const api = {
@@ -118,26 +131,29 @@ export const api = {
     if (opts?.limit != null && Number.isFinite(opts.limit) && opts.limit > 0) {
       sp.set("limit", String(Math.min(200, Math.floor(opts.limit))));
     }
-    return fetchAPI(`/posts?${sp.toString()}`) as Promise<Post[]>;
+    const data = await fetchAPI(`/posts?${sp.toString()}`);
+    return Array.isArray(data) ? (data as Post[]) : [];
   },
-  /** POST вместо GET: Vite/прокси иногда не передают Authorization на GET /api/.../admin/all */
+  /** Список всех постей для админки: только POST (заголовки Authorization стабильнее через прокси, чем GET). */
   getAllPosts: async (token?: string | null) => {
-    return fetchAPI("/posts/admin/list", {
+    const headers = getAuthHeaders(token);
+    const data = await fetchAPI("/posts/admin/list", {
       method: "POST",
-      headers: getAuthHeaders(token),
+      headers,
       body: "{}",
       cache: "no-store",
-    }) as Promise<Post[]>;
+    });
+    return Array.isArray(data) ? (data as Post[]) : [];
   },
   getPost: async (slug: string) => {
-    return fetchAPI(`/posts/${slug}`) as Promise<Post>;
+    return fetchAPI(`/posts/${encodeURIComponent(slug)}`) as Promise<Post>;
   },
   getPostBySlug: async (slug: string) => {
-    return fetchAPI(`/posts/${slug}`) as Promise<Post>;
+    return fetchAPI(`/posts/${encodeURIComponent(slug)}`) as Promise<Post>;
   },
   /** Загрузка поста по id (админка, редактирование) */
   getPostForAdmin: async (id: string) => {
-    return fetchAPI(`/posts/admin/post/${id}`, {
+    return fetchAPI(`/posts/admin/post/${encodeURIComponent(id)}`, {
       headers: getAuthHeaders(),
     }) as Promise<Post>;
   },
@@ -156,7 +172,7 @@ export const api = {
     }) as Promise<Post>;
   },
   deletePost: async (id: string) => {
-    return fetchAPI(`/posts/${id}`, {
+    return fetchAPI(`/posts/${encodeURIComponent(id)}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     }) as Promise<Record<string, unknown>>;
@@ -164,7 +180,8 @@ export const api = {
 
   // Categories
   getCategories: async () => {
-    const categories = (await fetchAPI("/categories")) as Category[];
+    const categories = (await fetchAPI("/categories")) as Category[] | null;
+    if (!Array.isArray(categories)) return [];
     return categories.map((category) => ({
       ...category,
       id: category.id || category._id,
@@ -174,7 +191,6 @@ export const api = {
   getCategoryBySlug: async (slug: string): Promise<Category | null> => {
     const res = await fetch(`${API_URL}/api/categories/${encodeURIComponent(slug)}`, {
       credentials: "same-origin",
-      headers: { "Content-Type": "application/json" },
     });
     if (res.status === 404) return null;
     if (!res.ok) {
@@ -209,7 +225,8 @@ export const api = {
 
   // Tags
   getTags: async () => {
-    const tags = (await fetchAPI("/tags")) as Tag[];
+    const tags = (await fetchAPI("/tags")) as Tag[] | null;
+    if (!Array.isArray(tags)) return [];
     return tags.map((tag) => ({
       ...tag,
       id: tag.id || tag._id,
