@@ -66,8 +66,19 @@ const PostPage = () => {
           slug: string;
           icon?: string | null;
         } | null;
+        const images = Array.isArray(data.post_images) ? data.post_images : [];
+        const videos = Array.isArray(data.post_videos) ? data.post_videos : [];
+        const legislation = Array.isArray(data.legislation_links) ? data.legislation_links : [];
+        const tagRows = data.tags
+          ? data.tags.map((tag: { name: string; name_uz?: string; name_en?: string; slug: string }) => ({
+              tags: { name: tag.name, name_uz: tag.name_uz, name_en: tag.name_en, slug: tag.slug },
+            }))
+          : [];
         setPost({
           ...data,
+          post_images: images,
+          post_videos: videos,
+          legislation_links: legislation,
           categories: cat
             ? {
                 name: cat.name,
@@ -77,11 +88,7 @@ const PostPage = () => {
                 icon: cat.icon ?? null,
               }
             : null,
-          post_tags: data.tags
-            ? data.tags.map((tag: { name: string; name_uz?: string; name_en?: string; slug: string }) => ({
-                tags: { name: tag.name, name_uz: tag.name_uz, name_en: tag.name_en, slug: tag.slug },
-              }))
-            : [],
+          post_tags: tagRows,
         });
       })
       .catch(() => {

@@ -226,7 +226,10 @@ const Index = () => {
 
             <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {publishedPosts.map((post) => (
-                <PostCard key={post.id} post={mapPost(post)} />
+                <PostCard
+                  key={String((post as { id?: string; _id?: string }).id ?? (post as { _id?: string })._id ?? post.slug)}
+                  post={mapPost(post)}
+                />
               ))}
             </div>
           </>

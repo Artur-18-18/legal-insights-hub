@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "@/lib/api";
 import {
   Save,
@@ -17,7 +17,6 @@ import "react-quill/dist/quill.snow.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -34,6 +33,56 @@ import { useI18n, useLocalized } from "@/lib/i18n";
 import { useAuth } from "@/contexts/AuthContext";
 import { TranslateButton } from "@/components/TranslateButton";
 import { cn } from "@/lib/utils";
+
+const CYRILLIC_TO_LATIN: Record<string, string> = {
+  а: "a",
+  б: "b",
+  в: "v",
+  г: "g",
+  д: "d",
+  е: "e",
+  ё: "yo",
+  ж: "zh",
+  з: "z",
+  и: "i",
+  й: "y",
+  к: "k",
+  л: "l",
+  м: "m",
+  н: "n",
+  о: "o",
+  п: "p",
+  р: "r",
+  с: "s",
+  т: "t",
+  у: "u",
+  ф: "f",
+  х: "kh",
+  ц: "ts",
+  ч: "ch",
+  ш: "sh",
+  щ: "shch",
+  ь: "",
+  ы: "y",
+  ъ: "",
+  э: "e",
+  ю: "yu",
+  я: "ya",
+};
+
+/** URL slug from title: transliteration + lowercase ASCII slug. */
+function titleToSlug(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  const s = trimmed
+    .toLowerCase()
+    .replace(/[а-яё]/g, (c) => CYRILLIC_TO_LATIN[c] ?? c)
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return s;
+}
 
 interface Category {
   _id: string;
@@ -84,12 +133,9 @@ export default function PostForm() {
   const [title, setTitle] = useState("");
   const [titleUz, setTitleUz] = useState("");
   const [slug, setSlug] = useState("");
-  const [excerpt, setExcerpt] = useState("");
-  const [excerptUz, setExcerptUz] = useState("");
   const [content, setContent] = useState("");
   const [contentUz, setContentUz] = useState("");
   const [titleEn, setTitleEn] = useState("");
-  const [excerptEn, setExcerptEn] = useState("");
   const [contentEn, setContentEn] = useState("");
   const [authorName, setAuthorName] = useState("");
   const [published, setPublished] = useState(false);
@@ -164,12 +210,9 @@ export default function PostForm() {
             setTitle(post.title || "");
             setTitleUz(post.title_uz || "");
             setSlug(post.slug || "");
-            setExcerpt(post.excerpt || "");
-            setExcerptUz(post.excerpt_uz || "");
             setContent(post.content || "");
             setContentUz(post.content_uz || "");
             setTitleEn(post.title_en || "");
-            setExcerptEn(post.excerpt_en || "");
             setContentEn(post.content_en || "");
             setAuthorName(post.author_name || "Автор");
             setPublished(post.published || false);
@@ -196,30 +239,13 @@ export default function PostForm() {
     } else {
       setFetching(false);
     }
-  }, [id, isEdit]);
+  }, [id, isEdit, t, toast]);
 
-  const generateSlug = () => {
-    if (!slug && title) {
-      setSlug(
-        title
-          .toLowerCase()
-          .replace(/[а-яё]/g, (c) => {
-            const map: Record<string, string> = {
-              а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "yo",
-              ж: "zh", з: "z", и: "i", й: "y", к: "k", л: "l", м: "m",
-              н: "n", о: "o", п: "p", р: "r", с: "s", т: "t", у: "u",
-              ф: "f", х: "kh", ц: "ts", ч: "ch", ш: "sh", щ: "shch",
-              ь: "", ы: "y", ъ: "", э: "e", ю: "yu", я: "ya",
-            };
-            return map[c] || c;
-          })
-          .replace(/[^a-z0-9\s-]/g, "")
-          .replace(/\s+/g, "-")
-          .replace(/-+/g, "-")
-          .replace(/^-|-$/g, ""),
-      );
+  useEffect(() => {
+    if (!isEdit) {
+      setSlug(titleToSlug(title));
     }
-  };
+  }, [title, isEdit]);
 
   const addLegislationLink = () =>
     setLegislationLinks([...legislationLinks, { title: "", url: "" }]);
@@ -301,7 +327,7 @@ export default function PostForm() {
   };
 
   const translateAllRuToUz = async () => {
-    if (!title.trim() && !excerpt.trim() && !content.trim()) {
+    if (!title.trim() && !content.trim()) {
       toast({
         title: t("translate.error"),
         description: t("admin.fill_required"),
@@ -313,7 +339,6 @@ export default function PostForm() {
     try {
       const items: Array<{ text: string; format?: "text" | "html"; field: string }> = [];
       if (title.trim()) items.push({ text: title, field: "title", format: "text" });
-      if (excerpt.trim()) items.push({ text: excerpt, field: "excerpt", format: "text" });
       if (content.trim()) items.push({ text: content, field: "content", format: "html" });
 
       const { results } = await api.translateBatch({
@@ -325,7 +350,6 @@ export default function PostForm() {
       for (const r of results) {
         if (r.error || !r.translated) continue;
         if (r.field === "title") setTitleUz(r.translated);
-        if (r.field === "excerpt") setExcerptUz(r.translated);
         if (r.field === "content") setContentUz(r.translated);
       }
       toast({
@@ -341,7 +365,7 @@ export default function PostForm() {
   };
 
   const translateAllRuToEn = async () => {
-    if (!title.trim() && !excerpt.trim() && !content.trim()) {
+    if (!title.trim() && !content.trim()) {
       toast({
         title: t("translate.error"),
         description: t("admin.fill_required"),
@@ -353,7 +377,6 @@ export default function PostForm() {
     try {
       const items: Array<{ text: string; format?: "text" | "html"; field: string }> = [];
       if (title.trim()) items.push({ text: title, field: "title", format: "text" });
-      if (excerpt.trim()) items.push({ text: excerpt, field: "excerpt", format: "text" });
       if (content.trim()) items.push({ text: content, field: "content", format: "html" });
 
       const { results } = await api.translateBatch({
@@ -365,7 +388,6 @@ export default function PostForm() {
       for (const r of results) {
         if (r.error || !r.translated) continue;
         if (r.field === "title") setTitleEn(r.translated);
-        if (r.field === "excerpt") setExcerptEn(r.translated);
         if (r.field === "content") setContentEn(r.translated);
       }
       toast({
@@ -381,54 +403,48 @@ export default function PostForm() {
   };
 
   const autoTranslateMissing = async () => {
-    type UzOut = { title_uz: string; excerpt_uz: string; content_uz: string };
-    type EnOut = { title_en: string; excerpt_en: string; content_en: string };
+    type UzOut = { title_uz: string; content_uz: string };
+    type EnOut = { title_en: string; content_en: string };
 
     const uzItems: Array<{ text: string; format?: "text" | "html"; field: string }> = [];
     if (title.trim() && !titleUz.trim()) uzItems.push({ text: title, field: "title" });
-    if (excerpt.trim() && !excerptUz.trim()) uzItems.push({ text: excerpt, field: "excerpt" });
     if (content.trim() && !contentUz.trim())
       uzItems.push({ text: content, field: "content", format: "html" });
 
-    let uz: UzOut = { title_uz: titleUz, excerpt_uz: excerptUz, content_uz: contentUz };
+    let uz: UzOut = { title_uz: titleUz, content_uz: contentUz };
     if (uzItems.length > 0) {
       try {
         const { results } = await api.translateBatch({ items: uzItems, source: "ru", target: "uz" });
         for (const r of results) {
           if (r.error || !r.translated) continue;
           if (r.field === "title") uz.title_uz = r.translated;
-          if (r.field === "excerpt") uz.excerpt_uz = r.translated;
           if (r.field === "content") uz.content_uz = r.translated;
         }
         setTitleUz(uz.title_uz);
-        setExcerptUz(uz.excerpt_uz);
         setContentUz(uz.content_uz);
       } catch {
-        uz = { title_uz: titleUz, excerpt_uz: excerptUz, content_uz: contentUz };
+        uz = { title_uz: titleUz, content_uz: contentUz };
       }
     }
 
     const enItems: Array<{ text: string; format?: "text" | "html"; field: string }> = [];
     if (title.trim() && !titleEn.trim()) enItems.push({ text: title, field: "title" });
-    if (excerpt.trim() && !excerptEn.trim()) enItems.push({ text: excerpt, field: "excerpt" });
     if (content.trim() && !contentEn.trim())
       enItems.push({ text: content, field: "content", format: "html" });
 
-    let en: EnOut = { title_en: titleEn, excerpt_en: excerptEn, content_en: contentEn };
+    let en: EnOut = { title_en: titleEn, content_en: contentEn };
     if (enItems.length > 0) {
       try {
         const { results } = await api.translateBatch({ items: enItems, source: "ru", target: "en" });
         for (const r of results) {
           if (r.error || !r.translated) continue;
           if (r.field === "title") en.title_en = r.translated;
-          if (r.field === "excerpt") en.excerpt_en = r.translated;
           if (r.field === "content") en.content_en = r.translated;
         }
         setTitleEn(en.title_en);
-        setExcerptEn(en.excerpt_en);
         setContentEn(en.content_en);
       } catch {
-        en = { title_en: titleEn, excerpt_en: excerptEn, content_en: contentEn };
+        en = { title_en: titleEn, content_en: contentEn };
       }
     }
 
@@ -437,7 +453,9 @@ export default function PostForm() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!title || !slug || !content) {
+    const resolvedSlug =
+      (slug.trim() || titleToSlug(title)).toLowerCase().replace(/[^a-z0-9-]/g, "") || "post";
+    if (!title || !resolvedSlug || !content) {
       toast({
         title: t("admin.error"),
         description: t("admin.fill_required"),
@@ -449,19 +467,15 @@ export default function PostForm() {
     setLoading(true);
 
     let finalTitleUz = titleUz;
-    let finalExcerptUz = excerptUz;
     let finalContentUz = contentUz;
     let finalTitleEn = titleEn;
-    let finalExcerptEn = excerptEn;
     let finalContentEn = contentEn;
 
     if (autoTranslate && published) {
       const out = await autoTranslateMissing();
       finalTitleUz = out.title_uz;
-      finalExcerptUz = out.excerpt_uz;
       finalContentUz = out.content_uz;
       finalTitleEn = out.title_en;
-      finalExcerptEn = out.excerpt_en;
       finalContentEn = out.content_en;
     }
 
@@ -469,10 +483,10 @@ export default function PostForm() {
       title,
       title_uz: finalTitleUz || null,
       title_en: finalTitleEn || null,
-      slug,
-      excerpt: excerpt || null,
-      excerpt_uz: finalExcerptUz || null,
-      excerpt_en: finalExcerptEn || null,
+      slug: resolvedSlug,
+      excerpt: null,
+      excerpt_uz: null,
+      excerpt_en: null,
       content,
       content_uz: finalContentUz || null,
       content_en: finalContentEn || null,
@@ -579,42 +593,38 @@ export default function PostForm() {
                         id="title"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        onBlur={generateSlug}
                         required
                       />
                     </div>
 
-                    <div>
-                      <Label htmlFor="slug">{t("admin.slug")} *</Label>
-                      <Input
-                        id="slug"
-                        value={slug}
-                        onChange={(e) =>
-                          setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
-                        }
-                        required
-                        placeholder={t("admin.slug_placeholder")}
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <Label htmlFor="excerpt">{t("admin.excerpt")}</Label>
-                        <TranslateButton
-                          value={excerpt}
-                          direction="ru-to-uz"
-                          onTranslated={(v) => setExcerptUz(v)}
-                          iconOnly
-                          disabled={!excerpt.trim()}
-                        />
+                    {(isEdit || title.trim()) && (
+                      <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                        <p className="text-muted-foreground mb-1">{t("admin.article_link")}</p>
+                        {(() => {
+                          const previewSlug = slug || titleToSlug(title);
+                          const origin =
+                            typeof window !== "undefined" ? window.location.origin : "";
+                          if (!previewSlug) {
+                            return (
+                              <span className="text-muted-foreground">
+                                {t("admin.slug_pending_hint")}
+                              </span>
+                            );
+                          }
+                          const href = `/post/${previewSlug}`;
+                          return (
+                            <Link
+                              to={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-mono text-primary hover:underline break-all"
+                            >
+                              {`${origin}${href}`}
+                            </Link>
+                          );
+                        })()}
                       </div>
-                      <Textarea
-                        id="excerpt"
-                        value={excerpt}
-                        onChange={(e) => setExcerpt(e.target.value)}
-                        rows={3}
-                      />
-                    </div>
+                    )}
 
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
@@ -662,27 +672,6 @@ export default function PostForm() {
                         id="title-uz"
                         value={titleUz}
                         onChange={(e) => setTitleUz(e.target.value)}
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <Label htmlFor="excerpt-uz">
-                          {t("admin.excerpt_uz_label")}
-                        </Label>
-                        <TranslateButton
-                          value={excerptUz}
-                          direction="uz-to-ru"
-                          onTranslated={(v) => setExcerpt(v)}
-                          iconOnly
-                          disabled={!excerptUz.trim()}
-                        />
-                      </div>
-                      <Textarea
-                        id="excerpt-uz"
-                        value={excerptUz}
-                        onChange={(e) => setExcerptUz(e.target.value)}
-                        rows={3}
                       />
                     </div>
 
@@ -748,40 +737,6 @@ export default function PostForm() {
                       id="title-en"
                       value={titleEn}
                       onChange={(e) => setTitleEn(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5 gap-2 flex-wrap">
-                      <Label htmlFor="excerpt-en">{t("admin.excerpt_en_label")}</Label>
-                      <div className="flex items-center gap-1">
-                        <TranslateButton
-                          value={excerpt}
-                          direction="ru-to-en"
-                          onTranslated={(v) => setExcerptEn(v)}
-                          iconOnly
-                          disabled={!excerpt.trim()}
-                        />
-                        <TranslateButton
-                          value={excerptUz}
-                          direction="uz-to-en"
-                          onTranslated={(v) => setExcerptEn(v)}
-                          iconOnly
-                          disabled={!excerptUz.trim()}
-                        />
-                        <TranslateButton
-                          value={excerptEn}
-                          direction="en-to-ru"
-                          onTranslated={(v) => setExcerpt(v)}
-                          iconOnly
-                          disabled={!excerptEn.trim()}
-                        />
-                      </div>
-                    </div>
-                    <Textarea
-                      id="excerpt-en"
-                      value={excerptEn}
-                      onChange={(e) => setExcerptEn(e.target.value)}
-                      rows={3}
                     />
                   </div>
                   <div>
